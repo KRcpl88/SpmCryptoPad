@@ -7,12 +7,6 @@
 
 #define MAX_LOADSTRING 100
 
-enum EFileCryptProcess
-{
-    EFCP_Encrypt,
-    EFCP_Decrypt
-};
-
 
 // Global Variables:
 HINSTANCE hInst;                                // current instance
@@ -586,7 +580,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     case WM_CREATE:
         hText = ::CreateWindowW(L"EDIT",
             0,
-            WS_CHILD | WS_VISIBLE | ES_MULTILINE | ES_AUTOHSCROLL | ES_AUTOVSCROLL | WS_VSCROLL | WS_HSCROLL,
+            WS_CHILD | WS_VISIBLE | ES_MULTILINE | ES_AUTOVSCROLL | WS_VSCROLL,
             3, 0,
             1, 1,
             hWnd,
