@@ -1,3 +1,10 @@
+.vs/*
+x64/*
+CryptoPad/Debug/*
+CryptoPad/Release/*
+CryptoPad/x64/*
+*.user
+
 # Prerequisites
 *.d
 
