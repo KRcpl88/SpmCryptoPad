@@ -321,6 +321,7 @@ INT_PTR CALLBACK SearchDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
             dwFirst = pszFind - pszText;
             dwLast = dwFirst + ::wcslen(szSearchText);
             ::SendMessageW(hText, EM_SETSEL, dwFirst, dwLast);
+            ::SendMessageW(hText, EM_SCROLLCARET, 0, 0);
             delete pszText;
             return (INT_PTR)TRUE;
         }
