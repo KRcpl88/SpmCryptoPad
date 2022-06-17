@@ -190,7 +190,7 @@ BOOL Run(HINSTANCE hInstance, int nCmdShow)
    // Main message loop:
    while (::GetMessageW(&msg, nullptr, 0, 0))
    {
-       if (!::TranslateAcceleratorW(hWnd, hAccelTable, &msg))
+       if (!::TranslateAcceleratorW(msg.hwnd, hAccelTable, &msg))
        {
            ::TranslateMessage(&msg);
            ::DispatchMessageW(&msg);
@@ -295,6 +295,7 @@ INT_PTR CALLBACK SearchDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
         case IDOK:
         case IDCANCEL:
             ::DestroyWindow(hDlg);
+            ::SendMessageW(hText, WM_SETFOCUS, 0, 0);
             return (INT_PTR)TRUE;
 
         case IDC_NEXT:
