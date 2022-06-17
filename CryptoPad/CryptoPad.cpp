@@ -17,9 +17,9 @@ WCHAR szPassword[1024] = { 0 };
 
 // Forward declarations of functions included in this code module:
 ATOM                MyRegisterClass(HINSTANCE hInstance);
-BOOL                InitInstance(HINSTANCE, int);
+BOOL                Run(HINSTANCE, int);
 LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
-INT_PTR CALLBACK    About(HWND, UINT, WPARAM, LPARAM);
+INT_PTR CALLBACK    AboutDlgProc(HWND, UINT, WPARAM, LPARAM);
 
 
 char ctoh(char c)
@@ -117,34 +117,12 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     UNREFERENCED_PARAMETER(hPrevInstance);
     UNREFERENCED_PARAMETER(lpCmdLine);
 
-    // TODO: Place code here.
-
     // Initialize global strings
     ::LoadStringW(hInstance, IDS_APP_TITLE, szTitle, MAX_LOADSTRING);
-    ::LoadStringW(hInstance, IDC_CRYPTOPAD, szWindowClass, MAX_LOADSTRING);
+    ::LoadStringW(hInstance, IDS_CRYPTOPAD, szWindowClass, MAX_LOADSTRING);
     ::MyRegisterClass(hInstance);
 
-    // Perform application initialization:
-    if (!::InitInstance (hInstance, nCmdShow))
-    {
-        return FALSE;
-    }
-
-    HACCEL hAccelTable = ::LoadAcceleratorsW(hInstance, MAKEINTRESOURCE(IDC_CRYPTOPAD));
-
-    MSG msg;
-
-    // Main message loop:
-    while (::GetMessageW(&msg, nullptr, 0, 0))
-    {
-        if (!::TranslateAcceleratorW(msg.hwnd, hAccelTable, &msg))
-        {
-            ::TranslateMessage(&msg);
-            ::DispatchMessageW(&msg);
-        }
-    }
-
-    return (int) msg.wParam;
+    return ::Run(hInstance, nCmdShow);
 }
 
 
@@ -185,7 +163,7 @@ ATOM MyRegisterClass(HINSTANCE hInstance)
 //        In this function, we save the instance handle in a global variable and
 //        create and display the main program window.
 //
-BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
+BOOL Run(HINSTANCE hInstance, int nCmdShow)
 {
    char szCodebook[33] = "b6a4c072764a2233db9c23b0bc79c143";
 
@@ -205,6 +183,20 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
    ::ShowWindow(hWnd, nCmdShow);
    ::UpdateWindow(hWnd);
 
+   HACCEL hAccelTable = ::LoadAcceleratorsW(hInstance, MAKEINTRESOURCE(IDC_CRYPTOPAD));
+
+   MSG msg;
+
+   // Main message loop:
+   while (::GetMessageW(&msg, nullptr, 0, 0))
+   {
+       if (!::TranslateAcceleratorW(hWnd, hAccelTable, &msg))
+       {
+           ::TranslateMessage(&msg);
+           ::DispatchMessageW(&msg);
+       }
+   }
+
    return TRUE;
 }
 
@@ -219,6 +211,7 @@ INT_PTR CALLBACK PasswordDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM 
     {
     case WM_INITDIALOG:
         ::SetDlgItemTextW(hDlg, IDC_PASSWORD, szPassword);
+        ::SendDlgItemMessageW(hDlg, IDC_PASSWORD, EM_LIMITTEXT, ARRAYSIZE(szPassword) - 1, 0);
         return (INT_PTR)TRUE;
 
     case WM_COMMAND:
@@ -230,7 +223,7 @@ INT_PTR CALLBACK PasswordDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM 
             ::EndDialog(hDlg, LOWORD(wParam));
             return (INT_PTR)TRUE;
 
-        case ID_VISIBLE:
+        case IDC_VISIBLE:
             hwndPassword = ::GetDlgItem(hDlg, IDC_PASSWORD);
             lStyle = ::GetWindowLongW(hwndPassword, GWL_STYLE);
             ::SendDlgItemMessageW(hDlg, IDC_PASSWORD, EM_SETPASSWORDCHAR, (ES_PASSWORD & lStyle) ? 0 : (WPARAM)L'*', 0);
@@ -277,6 +270,65 @@ void ParsePassword(__inout_z LPCWSTR pszPassword, __in size_t cbBin, __out_bcoun
         }
     }
 }
+
+// Message handler for password dialog box.
+INT_PTR CALLBACK SearchDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
+{
+    UNREFERENCED_PARAMETER(lParam);
+    HWND hwndSearchText = nullptr;
+    LONG lStyle = 0;
+    WCHAR szSearchText[512] = { 0 };
+    DWORD dwFirst = 0;
+    DWORD dwLast = 0;
+    LPWSTR pszText = nullptr;
+    LPWSTR pszFind = NULL;
+
+    switch (message)
+    {
+    case WM_INITDIALOG:
+        ::SendDlgItemMessageW(hDlg, IDC_TEXT, EM_LIMITTEXT, ARRAYSIZE(szSearchText) - 1, 0);
+        return (INT_PTR)TRUE;
+
+    case WM_COMMAND:
+        switch (LOWORD(wParam))
+        {
+        case IDOK:
+        case IDCANCEL:
+            ::DestroyWindow(hDlg);
+            return (INT_PTR)TRUE;
+
+        case IDC_NEXT:
+            ::GetDlgItemText(hDlg, IDC_TEXT, szSearchText, ARRAYSIZE(szSearchText) - 1);
+            ::_wcslwr_s(szSearchText, ARRAYSIZE(szSearchText));
+            ::SendMessageW(hText, EM_GETSEL, reinterpret_cast<WPARAM>(&dwFirst), reinterpret_cast<LPARAM>(&dwLast));
+
+            if (dwLast >= 0x100000)
+            {
+                return (INT_PTR)TRUE;
+            }
+
+            pszText = new WCHAR[0x100000];
+
+            ::GetWindowTextW(hText, pszText, 0x100000);
+            ::_wcslwr_s(pszText, 0x100000);
+
+            pszFind = ::wcsstr(pszText + dwLast, szSearchText);
+            if (pszFind == NULL)
+            {
+                return (INT_PTR)TRUE;
+            }
+
+            dwFirst = pszFind - pszText;
+            dwLast = dwFirst + ::wcslen(szSearchText);
+            ::SendMessageW(hText, EM_SETSEL, dwFirst, dwLast);
+            delete pszText;
+            return (INT_PTR)TRUE;
+        }
+        break;
+    }
+    return (INT_PTR)FALSE;
+}
+
 
 void GenNonce(__inout_bcount(k_cSpmBlockSizeBytes) BYTE* pNonce, __inout_z char * pszHashKey = nullptr)
 {
@@ -495,6 +547,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     OPENFILENAME ofn;        // common dialog box structure
     WCHAR szFile[260] = { 0 };       // buffer for file name
     WCHAR* pszText = nullptr;
+    HWND hSearch = nullptr;
 
     switch (message)
     {
@@ -505,11 +558,20 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             switch (wmId)
             {
             case IDM_ABOUT:
-                ::DialogBoxW(hInst, MAKEINTRESOURCE(IDD_ABOUTBOX), hWnd, About);
+                ::DialogBoxW(hInst, MAKEINTRESOURCE(IDD_ABOUTBOX), hWnd, AboutDlgProc);
                 break;
 
             case IDM_EXIT:
                 ::DestroyWindow(hWnd);
+                break;
+
+            case IDM_SEARCH:
+                //::DialogBoxW(hInst, MAKEINTRESOURCE(IDD_SEARCH), hWnd, AboutDlgProc);
+                hSearch = ::CreateDialogW(hInst,
+                    MAKEINTRESOURCE(IDD_SEARCH),
+                    hWnd,
+                    (DLGPROC)SearchDlgProc);
+                ::ShowWindow(hSearch, SW_SHOW);
                 break;
 
             case IDM_OPEN:
@@ -580,7 +642,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     case WM_CREATE:
         hText = ::CreateWindowW(L"EDIT",
             0,
-            WS_CHILD | WS_VISIBLE | ES_MULTILINE | ES_AUTOVSCROLL | WS_VSCROLL,
+            WS_CHILD | WS_VISIBLE | ES_MULTILINE | ES_WANTRETURN | ES_AUTOVSCROLL | WS_VSCROLL | ES_NOHIDESEL,
             3, 0,
             1, 1,
             hWnd,
@@ -607,7 +669,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 }
 
 // Message handler for about box.
-INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
+INT_PTR CALLBACK AboutDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 {
     UNREFERENCED_PARAMETER(lParam);
     switch (message)
