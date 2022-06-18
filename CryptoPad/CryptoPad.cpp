@@ -11,6 +11,7 @@
 // Global Variables:
 HINSTANCE hInst;                                // current instance
 HWND hText;                                     // text control
+HWND hSearchDlg = nullptr;                      // find dialog
 WCHAR szTitle[MAX_LOADSTRING];                  // The title bar text
 WCHAR szWindowClass[MAX_LOADSTRING];            // the main window class name
 WCHAR szPassword[1024] = { 0 };
@@ -165,39 +166,50 @@ ATOM MyRegisterClass(HINSTANCE hInstance)
 //
 BOOL Run(HINSTANCE hInstance, int nCmdShow)
 {
-   char szCodebook[33] = "b6a4c072764a2233db9c23b0bc79c143";
+    char szCodebook[33] = "b6a4c072764a2233db9c23b0bc79c143";
 
-   hInst = hInstance; // Store instance handle in our global variable
+    hInst = hInstance; // Store instance handle in our global variable
 
-   // TBD load codebook from registry
-   ::InitCodebook(szCodebook);
+    // TBD load codebook from registry
+    ::InitCodebook(szCodebook);
 
-   HWND hWnd = ::CreateWindowW(szWindowClass, szTitle, WS_OVERLAPPEDWINDOW,
-      CW_USEDEFAULT, 0, CW_USEDEFAULT, 0, nullptr, nullptr, hInstance, nullptr);
+    HWND hWnd = ::CreateWindowW(szWindowClass, szTitle, WS_OVERLAPPEDWINDOW,
+        CW_USEDEFAULT, 0, CW_USEDEFAULT, 0, nullptr, nullptr, hInstance, nullptr);
 
-   if (!hWnd)
-   {
-      return FALSE;
-   }
+    if (!hWnd)
+    {
+        return FALSE;
+    }
 
-   ::ShowWindow(hWnd, nCmdShow);
-   ::UpdateWindow(hWnd);
+    ::ShowWindow(hWnd, nCmdShow);
+    ::UpdateWindow(hWnd);
 
-   HACCEL hAccelTable = ::LoadAcceleratorsW(hInstance, MAKEINTRESOURCE(IDC_CRYPTOPAD));
+    HACCEL hAccelTable = ::LoadAcceleratorsW(hInstance, MAKEINTRESOURCE(IDC_CRYPTOPAD));
 
-   MSG msg;
+    MSG msg;
 
-   // Main message loop:
-   while (::GetMessageW(&msg, nullptr, 0, 0))
-   {
-       if (!::TranslateAcceleratorW(hWnd, hAccelTable, &msg))
-       {
-           ::TranslateMessage(&msg);
-           ::DispatchMessageW(&msg);
-       }
-   }
+    // Main message loop:
+    while (::GetMessageW(&msg, nullptr, 0, 0))
+    {
+        if (hSearchDlg == nullptr)
+        {
+            if (!::TranslateAcceleratorW(msg.hwnd, hAccelTable, &msg))
+            {
+                ::TranslateMessage(&msg);
+                ::DispatchMessageW(&msg);
+            }
+        }
+        else
+        {
+            if (!IsDialogMessage(hSearchDlg, &msg))
+            {
+                ::TranslateMessage(&msg);
+                ::DispatchMessageW(&msg);
+            }
+        }
+    }
 
-   return TRUE;
+    return TRUE;
 }
 
 // Message handler for password dialog box.
@@ -295,6 +307,8 @@ INT_PTR CALLBACK SearchDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
         case IDOK:
         case IDCANCEL:
             ::DestroyWindow(hDlg);
+            hSearchDlg = nullptr;
+            ::SendMessageW(hText, WM_SETFOCUS, 0, 0);
             return (INT_PTR)TRUE;
 
         case IDC_NEXT:
@@ -308,6 +322,7 @@ INT_PTR CALLBACK SearchDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
             }
 
             pszText = new WCHAR[0x100000];
+            ::ZeroMemory(pszText, 0x100000);
 
             ::GetWindowTextW(hText, pszText, 0x100000);
             ::_wcslwr_s(pszText, 0x100000);
@@ -318,8 +333,8 @@ INT_PTR CALLBACK SearchDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
                 return (INT_PTR)TRUE;
             }
 
-            dwFirst = pszFind - pszText;
-            dwLast = dwFirst + ::wcslen(szSearchText);
+            dwFirst = static_cast<DWORD>(pszFind - pszText);
+            dwLast = static_cast<DWORD>(dwFirst + ::wcslen(szSearchText));
             ::SendMessageW(hText, EM_SETSEL, dwFirst, dwLast);
             ::SendMessageW(hText, EM_SCROLLCARET, 0, 0);
             delete pszText;
@@ -548,7 +563,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     OPENFILENAME ofn;        // common dialog box structure
     WCHAR szFile[260] = { 0 };       // buffer for file name
     WCHAR* pszText = nullptr;
-    HWND hSearch = nullptr;
 
     switch (message)
     {
@@ -567,12 +581,14 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                 break;
 
             case IDM_SEARCH:
-                //::DialogBoxW(hInst, MAKEINTRESOURCE(IDD_SEARCH), hWnd, AboutDlgProc);
-                hSearch = ::CreateDialogW(hInst,
-                    MAKEINTRESOURCE(IDD_SEARCH),
-                    hWnd,
-                    (DLGPROC)SearchDlgProc);
-                ::ShowWindow(hSearch, SW_SHOW);
+                if (hSearchDlg == nullptr)
+                {
+                    hSearchDlg = ::CreateDialogW(hInst,
+                        MAKEINTRESOURCE(IDD_SEARCH),
+                        hWnd,
+                        (DLGPROC)SearchDlgProc);
+                    ::ShowWindow(hSearchDlg, SW_SHOW);
+                }
                 break;
 
             case IDM_OPEN:
@@ -595,11 +611,12 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                     if (::DialogBox(hInst, MAKEINTRESOURCE(IDD_PASSWORD), hWnd, PasswordDlgProc) == IDOK)
                     {
                         pszText = new WCHAR[0x100000];
+                        ::ZeroMemory(pszText, 0x100000);
 
                         ::ReadEncryptedFile(ofn.lpstrFile, pszText, szPassword);
                         ::SetWindowTextW(hText, pszText);
 
-                        delete pszText;
+                        delete [] pszText;
 
                     }
                 }
@@ -625,11 +642,12 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                     if (::GetSaveFileNameW(&ofn))
                     {
                         pszText = new WCHAR[0x100000];
+                        ::ZeroMemory(pszText, 0x100000);
 
                         ::GetWindowTextW(hText, pszText, 0x100000);
                         ::SaveEncryptedFile(ofn.lpstrFile, pszText, szPassword);
 
-                        delete pszText;
+                        delete [] pszText;
                     }
                 }
                 break;
@@ -651,7 +669,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             ::GetModuleHandle(NULL),
             NULL);
 
-        ::PostMessageW(hText, EM_LIMITTEXT, 0x100000, 0);
+        ::PostMessageW(hText, EM_LIMITTEXT, 0xFFFFF, 0);
         break;
 
     case WM_WINDOWPOSCHANGED:
