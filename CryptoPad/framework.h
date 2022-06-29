@@ -15,6 +15,7 @@
 #include <memory.h>
 #include <tchar.h>
 #include <ctime>
+#include <strsafe.h>
 
 #ifdef _DEBUG
 #define DIAGNOSTIC_OUTPUT 1
@@ -23,3 +24,10 @@
 #define DIAGNOSTIC_OUTPUT 0
 #define ASSERT(t) ;
 #endif
+
+enum EFileCryptProcess
+{
+    EFCP_Encrypt,
+    EFCP_Decrypt
+};
+
