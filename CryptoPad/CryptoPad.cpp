@@ -409,6 +409,223 @@ void ApplyNonce(__inout_bcount(k_cSpmBlockSizeBytes) BYTE* pNonce, const unsigne
     pCryptor->SetKeys(rgTemp, cKey);
 }
 
+void FbcProcessFile(HANDLE hFileIn, HANDLE hFileOut, ULONGLONG cbFileSize, FBC_CRYPT* pCyptor, EFileCryptProcess eFileCryptProcess)
+{
+    unsigned char rgBuf[0x20000] = { 0 };
+    DWORD dwBytesRead = 0;
+    DWORD dwBytesWritten = 0;
+    DWORD cbBytesToWrite = 0;
+    DWORD cbBlockAlignedBytesRead = 0;
+    ULONGLONG ullTotalBytes = 0;
+
+    C_ASSERT((sizeof(rgBuf) % k_cSpmBlockSizeBytes) == 0);
+
+    do
+    {
+
+        ReadFile(hFileIn, rgBuf, sizeof(rgBuf), &dwBytesRead, NULL);
+
+        if (0 < dwBytesRead)
+        {
+            cbBlockAlignedBytesRead = (((dwBytesRead - 1) / k_cSpmBlockSizeBytes) + 1) * k_cSpmBlockSizeBytes;
+
+            ASSERT(cbBlockAlignedBytesRead <= sizeof(rgBuf));
+
+            switch (eFileCryptProcess)
+            {
+            case EFCP_Encrypt:
+                pCyptor->Encrypt(rgBuf, cbBlockAlignedBytesRead);
+                cbBytesToWrite = cbBlockAlignedBytesRead;
+                break;
+            case EFCP_Decrypt:
+                pCyptor->Decrypt(rgBuf, cbBlockAlignedBytesRead);
+                cbBytesToWrite = (DWORD)(min((ULONGLONG)dwBytesRead, cbFileSize - ullTotalBytes));
+                break;
+            }
+
+            WriteFile(hFileOut, rgBuf, cbBytesToWrite, &dwBytesWritten, NULL);
+            if (cbBytesToWrite != dwBytesWritten)
+            {
+                ::MessageBoxW(nullptr, L"Could not write file", L"Write Failed", MB_OK | MB_ICONERROR);
+                return;
+            }
+
+            ullTotalBytes += dwBytesWritten;
+        }
+    } while (dwBytesRead == sizeof(rgBuf));
+}
+
+void FbcEncryptFile(LPCWSTR pPlaintext, LPCWSTR pCiphertext, const unsigned char* pKey, size_t cbKey)
+{
+    FBC_CRYPT prngCrypt;
+    HANDLE hFileIn = NULL;
+    HANDLE hFileOut = NULL;
+    BOOL fOK = FALSE;
+    unsigned char* pNonce = NULL;
+    DWORD dwBytes = 0;
+    DWORD cbFileSize = 0;
+    LARGE_INTEGER llFileSize = { 0 };
+
+    // open input and output files
+    hFileIn = ::CreateFileW(pPlaintext, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+    if (INVALID_HANDLE_VALUE == hFileIn)
+    {
+        goto Error;
+    }
+
+    fOK = GetFileSizeEx(hFileIn, reinterpret_cast<LARGE_INTEGER*>(&llFileSize));
+    if ((!fOK))
+    {
+        goto Error;
+    }
+
+    cbFileSize = llFileSize.LowPart;
+
+
+    hFileOut = ::CreateFileW(pCiphertext, GENERIC_WRITE, FILE_SHARE_READ, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+    if (INVALID_HANDLE_VALUE == hFileOut)
+    {
+        goto Error;
+    }
+
+    pNonce = new unsigned char[k_cSpmBlockSizeBytes];
+    GenNonce(pNonce);
+
+    fOK = ::WriteFile(hFileOut, pNonce, static_cast<DWORD>(k_cSpmBlockSizeBytes * sizeof(*pNonce)), &dwBytes, NULL);
+    if ((!fOK) || (dwBytes != (k_cSpmBlockSizeBytes * sizeof(*pNonce))))
+    {
+        goto Error;
+    }
+
+    fOK = ::WriteFile(hFileOut, &cbFileSize, static_cast<DWORD>(sizeof(cbFileSize)), &dwBytes, NULL);
+    if ((!fOK) || (dwBytes != sizeof(cbFileSize)))
+    {
+        goto Error;
+    }
+
+    ApplyNonce(pNonce, pKey, cbKey, &prngCrypt);
+
+    FbcProcessFile(hFileIn, hFileOut, cbFileSize, &prngCrypt, EFCP_Encrypt);
+
+    goto Done;
+
+Error:
+    ::MessageBoxW(nullptr, L"Could not encrypt file", L"Encrypt Failed", MB_OK | MB_ICONERROR);
+
+Done:
+    delete[] pNonce;
+    ::CloseHandle(hFileIn);
+    ::CloseHandle(hFileOut);
+}
+
+void FbcDecryptFile(LPCWSTR pCiphertext, LPCWSTR pPlaintext, const unsigned char* pKey, size_t cbKey)
+{
+    FBC_CRYPT prngCrypt;
+    HANDLE hFileIn = NULL;
+    HANDLE hFileOut = NULL;
+    BOOL fOK = FALSE;
+    unsigned char* pNonce = NULL;
+    DWORD dwBytes = 0;
+    DWORD cbFileSize = 0;
+
+
+    // open input and output files
+    hFileIn = ::CreateFileW(pCiphertext, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+    if (INVALID_HANDLE_VALUE == hFileIn)
+    {
+        goto Error;
+    }
+
+    hFileOut = ::CreateFileW(pPlaintext, GENERIC_WRITE, FILE_SHARE_READ, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+    if (INVALID_HANDLE_VALUE == hFileOut)
+    {
+        goto Error;
+    }
+
+    // read nonce from input file
+    pNonce = new unsigned char[k_cSpmBlockSizeBytes];
+
+    fOK = ::ReadFile(hFileIn, pNonce, static_cast<DWORD>(k_cSpmBlockSizeBytes * sizeof(*pNonce)), &dwBytes, NULL);
+    if ((!fOK) || (dwBytes != (k_cSpmBlockSizeBytes * sizeof(*pNonce))))
+    {
+        goto Error;
+    }
+
+    fOK = ::ReadFile(hFileIn, &cbFileSize, static_cast<DWORD>(sizeof(cbFileSize)), &dwBytes, NULL);
+    if ((!fOK) || (dwBytes != sizeof(cbFileSize)))
+    {
+        goto Error;
+    }
+
+    ApplyNonce(pNonce, pKey, cbKey, &prngCrypt);
+
+    FbcProcessFile(hFileIn, hFileOut, cbFileSize, &prngCrypt, EFCP_Decrypt);
+    goto Done;
+
+Error:
+    ::MessageBoxW(nullptr, L"Could not decrypt file", L"Decrypt Failed", MB_OK | MB_ICONERROR);
+
+Done:
+    delete[] pNonce;
+    ::CloseHandle(hFileIn);
+    ::CloseHandle(hFileOut);
+}
+
+
+void EncryptFile(__in_z LPCWSTR pszFilename, __in_z const LPCWSTR pszPassword)
+{
+    WCHAR szEncryptedFile[260] = { 0 };       // buffer for encrypted file name
+    unsigned char* pKey = new unsigned char[FBC_CRYPT::s_GetKeyWidth()];
+
+    ::ParsePassword(pszPassword, FBC_CRYPT::s_GetKeyWidth(), &pKey);
+    ASSERT(FBC_CRYPT::s_ValidKey(pKey, FBC_CRYPT::s_GetKeyWidth()));
+
+    if (FAILED(::StringCchPrintfW(szEncryptedFile, ARRAYSIZE(szEncryptedFile), L"%s.spmbc", pszFilename)))
+    {
+        goto Error;
+    }
+
+    ::FbcEncryptFile(pszFilename, szEncryptedFile, pKey, FBC_CRYPT::s_GetKeyWidth());
+
+    goto Done;
+
+Error:
+    ::MessageBoxW(nullptr, L"File name too long", L"Encrypt Failed", MB_OK | MB_ICONERROR);
+
+Done:
+    delete[] pKey;
+}
+
+void DecryptFile(__in_z LPCWSTR pszFilename, __in_z const LPCWSTR pszPassword)
+{
+    WCHAR szDecryptedFile[260] = { 0 };       // buffer for encrypted file name
+    unsigned char* pKey = new unsigned char[FBC_CRYPT::s_GetKeyWidth()];
+    LPWSTR pszExt = NULL;
+    
+    ::ParsePassword(pszPassword, FBC_CRYPT::s_GetKeyWidth(), &pKey);
+    ASSERT(FBC_CRYPT::s_ValidKey(pKey, FBC_CRYPT::s_GetKeyWidth()));
+
+    if (FAILED(::StringCchPrintfW(szDecryptedFile, ARRAYSIZE(szDecryptedFile), L"%s", pszFilename)))
+    {
+        ::MessageBoxW(nullptr, L"File name too long", L"Decrypt Failed", MB_OK | MB_ICONERROR);
+        goto Done;
+    }
+
+    pszExt = ::wcsstr(szDecryptedFile, L".spmbc");
+    if (NULL == pszExt)
+    {
+        ::MessageBoxW(nullptr, L"File name must have .spmbc file extension to decrypt", L"Decrypt Failed", MB_OK | MB_ICONERROR);
+        goto Done;
+    }
+    *pszExt = 0;    // truncate extension
+
+
+    ::FbcDecryptFile(pszFilename, szDecryptedFile, pKey, FBC_CRYPT::s_GetKeyWidth());
+
+Done:
+    delete[] pKey;
+}
+
 void SaveEncryptedFile(__in_z LPCWSTR pszFilename, __in_z LPCWSTR pszText, __in_z const LPCWSTR pszPassword)
 {
     unsigned char* pKey = new unsigned char[FBC_CRYPT::s_GetKeyWidth()];
@@ -589,6 +806,56 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                         (DLGPROC)SearchDlgProc);
                     ::ShowWindow(hSearchDlg, SW_SHOW);
                 }
+                break;
+
+            case IDM_ENCRYPT:
+                // Initialize OPENFILENAME
+                ::ZeroMemory(&ofn, sizeof(ofn));
+                ofn.lStructSize = sizeof(ofn);
+                ofn.hwndOwner = hWnd;
+                ofn.lpstrFile = szFile;
+                ofn.nMaxFile = sizeof(szFile);
+                ofn.lpstrFilter = L"All Files\0*.*\0";
+                ofn.nFilterIndex = 1;
+                ofn.lpstrFileTitle = NULL;
+                ofn.nMaxFileTitle = 0;
+                ofn.lpstrInitialDir = NULL;
+                ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
+
+                // Display the Open dialog box. 
+                if (::GetOpenFileNameW(&ofn))
+                {
+                    if (::DialogBox(hInst, MAKEINTRESOURCE(IDD_PASSWORD), hWnd, PasswordDlgProc) == IDOK)
+                    {
+                        ::EncryptFile(ofn.lpstrFile, szPassword);
+                    }
+                }
+
+                break;
+
+            case IDM_DECRYPT:
+                // Initialize OPENFILENAME
+                ::ZeroMemory(&ofn, sizeof(ofn));
+                ofn.lStructSize = sizeof(ofn);
+                ofn.hwndOwner = hWnd;
+                ofn.lpstrFile = szFile;
+                ofn.nMaxFile = sizeof(szFile);
+                ofn.lpstrFilter = L"SPM encrypted file (*.spmbc)\0*.spmbc\0";
+                ofn.nFilterIndex = 1;
+                ofn.lpstrFileTitle = NULL;
+                ofn.nMaxFileTitle = 0;
+                ofn.lpstrInitialDir = NULL;
+                ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
+
+                // Display the Open dialog box. 
+                if (::GetOpenFileNameW(&ofn))
+                {
+                    if (::DialogBox(hInst, MAKEINTRESOURCE(IDD_PASSWORD), hWnd, PasswordDlgProc) == IDOK)
+                    {
+                        ::DecryptFile(ofn.lpstrFile, szPassword);
+                    }
+                }
+
                 break;
 
             case IDM_OPEN:

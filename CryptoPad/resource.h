@@ -18,6 +18,8 @@
 #define IDM_SAVE                        111
 #define IDC_PASSWORD                    112
 #define IDM_SEARCH                      113
+#define IDM_ENCRYPT                     114
+#define IDM_DECRYPT                     115
 #define IDR_MAINFRAME                   128
 #define IDD_PASSWORD                    129
 #define IDD_SEARCH                      130
