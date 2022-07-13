@@ -464,6 +464,7 @@ void FbcEncryptFile(LPCWSTR pPlaintext, LPCWSTR pCiphertext, const unsigned char
     unsigned char* pNonce = NULL;
     DWORD dwBytes = 0;
     DWORD cbFileSize = 0;
+    LARGE_INTEGER llFileSize = { 0 };
 
     // open input and output files
     hFileIn = ::CreateFileW(pPlaintext, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
@@ -472,11 +473,13 @@ void FbcEncryptFile(LPCWSTR pPlaintext, LPCWSTR pCiphertext, const unsigned char
         goto Error;
     }
 
-    fOK = GetFileSizeEx(hFileIn, reinterpret_cast<LARGE_INTEGER*>(&cbFileSize));
+    fOK = GetFileSizeEx(hFileIn, reinterpret_cast<LARGE_INTEGER*>(&llFileSize));
     if ((!fOK))
     {
         goto Error;
     }
+
+    cbFileSize = llFileSize.LowPart;
 
 
     hFileOut = ::CreateFileW(pCiphertext, GENERIC_WRITE, FILE_SHARE_READ, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
@@ -511,6 +514,8 @@ Error:
 
 Done:
     delete[] pNonce;
+    ::CloseHandle(hFileIn);
+    ::CloseHandle(hFileOut);
 }
 
 void FbcDecryptFile(LPCWSTR pCiphertext, LPCWSTR pPlaintext, const unsigned char* pKey, size_t cbKey)
@@ -554,8 +559,6 @@ void FbcDecryptFile(LPCWSTR pCiphertext, LPCWSTR pPlaintext, const unsigned char
 
     ApplyNonce(pNonce, pKey, cbKey, &prngCrypt);
 
-    delete[] pNonce;
-
     FbcProcessFile(hFileIn, hFileOut, cbFileSize, &prngCrypt, EFCP_Decrypt);
     goto Done;
 
@@ -564,6 +567,8 @@ Error:
 
 Done:
     delete[] pNonce;
+    ::CloseHandle(hFileIn);
+    ::CloseHandle(hFileOut);
 }
 
 
@@ -606,10 +611,10 @@ void DecryptFile(__in_z LPCWSTR pszFilename, __in_z const LPCWSTR pszPassword)
         goto Done;
     }
 
-    pszExt = ::wcschr(szDecryptedFile, L'.');
+    pszExt = ::wcsstr(szDecryptedFile, L".spmbc");
     if (NULL == pszExt)
     {
-        ::MessageBoxW(nullptr, L"File name must have file extension to decrypt", L"Decrypt Failed", MB_OK | MB_ICONERROR);
+        ::MessageBoxW(nullptr, L"File name must have .spmbc file extension to decrypt", L"Decrypt Failed", MB_OK | MB_ICONERROR);
         goto Done;
     }
     *pszExt = 0;    // truncate extension
