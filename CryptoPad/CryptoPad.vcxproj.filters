@@ -35,11 +35,6 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="CryptoPad.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-  </ItemGroup>
-  <ItemGroup>
     <ResourceCompile Include="CryptoPad.rc">
       <Filter>Resource Files</Filter>
     </ResourceCompile>
