@@ -1,5 +1,5 @@
-#include "pch.h"
-#include "../CryptoPad/CryptoPadUtils.h"
+#include <gtest/gtest.h>
+#include "CryptoPadUtils.h"
 
 static bool IsAllZeros(const BYTE* buf, size_t len)
 {
