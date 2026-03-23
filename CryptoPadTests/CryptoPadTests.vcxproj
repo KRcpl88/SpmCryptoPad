@@ -161,6 +161,7 @@
   <ItemGroup>
     <ClCompile Include="GenNonce_test.cpp" />
     <ClCompile Include="HexToBin_test.cpp" />
+    <ClCompile Include="SpmBlockCipher64_test.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CryptoPadLib\CryptoPadLib.vcxproj">

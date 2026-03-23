@@ -13,5 +13,8 @@
     <ClCompile Include="HexToBin_test.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="SpmBlockCipher64_test.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

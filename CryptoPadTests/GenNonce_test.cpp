@@ -11,14 +11,11 @@ static bool IsAllZeros(const BYTE* buf, size_t len)
     return true;
 }
 
-// Test fixture initializes the cipher codebook once for all GenNonce tests.
+// Test fixture for GenNonce tests.
+// Codebook initialisation is handled by CodebookEnvironment in
+// SpmBlockCipher64_test.cpp to ensure s_ConstructCodebook is called exactly once.
 class GenNonceTest : public ::testing::Test
 {
-protected:
-    static void SetUpTestSuite()
-    {
-        FBC_CRYPT::s_ConstructCodebook(CSpmBlockCipher64::BLOCK_MODE::NoPermutation);
-    }
 };
 
 // Verify that GenNonce fills the output buffer with non-zero data.
