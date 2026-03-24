@@ -5,6 +5,10 @@ VisualStudioVersion = 16.0.32428.217
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CryptoPad", "CryptoPad\CryptoPad.vcxproj", "{A2B73B16-7E52-401C-9502-FD3027310BD4}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CryptoPadLib", "CryptoPadLib\CryptoPadLib.vcxproj", "{B2E1A3C4-D5F6-7890-1234-ABCDEF567890}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CryptoPadTests", "CryptoPadTests\CryptoPadTests.vcxproj", "{E8A5B2C1-3F74-4D8A-9E12-1B7CF3A05D26}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -21,6 +25,22 @@ Global
 		{A2B73B16-7E52-401C-9502-FD3027310BD4}.Release|x64.Build.0 = Release|x64
 		{A2B73B16-7E52-401C-9502-FD3027310BD4}.Release|x86.ActiveCfg = Release|Win32
 		{A2B73B16-7E52-401C-9502-FD3027310BD4}.Release|x86.Build.0 = Release|Win32
+		{B2E1A3C4-D5F6-7890-1234-ABCDEF567890}.Debug|x64.ActiveCfg = Debug|x64
+		{B2E1A3C4-D5F6-7890-1234-ABCDEF567890}.Debug|x64.Build.0 = Debug|x64
+		{B2E1A3C4-D5F6-7890-1234-ABCDEF567890}.Debug|x86.ActiveCfg = Debug|Win32
+		{B2E1A3C4-D5F6-7890-1234-ABCDEF567890}.Debug|x86.Build.0 = Debug|Win32
+		{B2E1A3C4-D5F6-7890-1234-ABCDEF567890}.Release|x64.ActiveCfg = Release|x64
+		{B2E1A3C4-D5F6-7890-1234-ABCDEF567890}.Release|x64.Build.0 = Release|x64
+		{B2E1A3C4-D5F6-7890-1234-ABCDEF567890}.Release|x86.ActiveCfg = Release|Win32
+		{B2E1A3C4-D5F6-7890-1234-ABCDEF567890}.Release|x86.Build.0 = Release|Win32
+		{E8A5B2C1-3F74-4D8A-9E12-1B7CF3A05D26}.Debug|x64.ActiveCfg = Debug|x64
+		{E8A5B2C1-3F74-4D8A-9E12-1B7CF3A05D26}.Debug|x64.Build.0 = Debug|x64
+		{E8A5B2C1-3F74-4D8A-9E12-1B7CF3A05D26}.Debug|x86.ActiveCfg = Debug|Win32
+		{E8A5B2C1-3F74-4D8A-9E12-1B7CF3A05D26}.Debug|x86.Build.0 = Debug|Win32
+		{E8A5B2C1-3F74-4D8A-9E12-1B7CF3A05D26}.Release|x64.ActiveCfg = Release|x64
+		{E8A5B2C1-3F74-4D8A-9E12-1B7CF3A05D26}.Release|x64.Build.0 = Release|x64
+		{E8A5B2C1-3F74-4D8A-9E12-1B7CF3A05D26}.Release|x86.ActiveCfg = Release|Win32
+		{E8A5B2C1-3F74-4D8A-9E12-1B7CF3A05D26}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

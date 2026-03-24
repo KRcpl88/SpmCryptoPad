@@ -27,17 +27,12 @@
     <ClInclude Include="CryptoPad.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="CryptoPadUtils.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="SpmBlockCipher64.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-  </ItemGroup>
-  <ItemGroup>
-    <ClCompile Include="CryptoPad.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="SpmBlockCipher64.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="CryptoPad.rc">

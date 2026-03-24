@@ -4,6 +4,7 @@
 #include "framework.h"
 #include "CryptoPad.h"
 #include "SpmBlockCipher64.h"
+#include "CryptoPadUtils.h"
 
 #define MAX_LOADSTRING 100
 
@@ -22,75 +23,6 @@ BOOL                Run(HINSTANCE, int);
 LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK    AboutDlgProc(HWND, UINT, WPARAM, LPARAM);
 
-
-char ctoh(char c)
-{
-    if (('0' <= c) && ('9' >= c))
-    {
-        return c - '0';
-    }
-    else if (('a' <= c) && ('z' >= c))
-    {
-        return 10 + c - 'a';
-    }
-    else if (('A' <= c) && ('Z' >= c))
-    {
-        return 10 + c - 'A';
-    }
-
-    return 0;
-}
-
-unsigned long atoh(__in_z const char* pszText)
-{
-    unsigned long dwResult = 0;
-    while (*pszText >= '0')
-    {
-        dwResult = (dwResult << 4) + ctoh(*pszText);
-        ++pszText;
-    }
-
-    return dwResult;
-}
-
-void HexToBin(__inout_z char* pszHex, __in size_t cchBin, __out_ecount(cchBin) unsigned char* pBin)
-{
-    char* pszTemp;
-    size_t i = cchBin - 1;
-
-    // start at the end
-    pszTemp = pszHex + strlen(pszHex) - 2;
-    while ((pszTemp > pszHex) && (i < cchBin))
-    {
-        pBin[i] = static_cast<unsigned char>(atoh(pszTemp));
-        *pszTemp = 0;
-        pszTemp -= 2;
-        --i;
-    }
-
-    // convert the last char, this may be a partial value (one nybble instead of two)
-    if (i < cchBin)
-    {
-        pBin[i] = static_cast<unsigned char>(atoh(pszHex));
-        while ((--i) < cchBin)
-        {
-            pBin[i] = 0;
-        }
-    }
-}
-
-void HexToBin(__inout_z char* pszHex, __in size_t nAlign, __out size_t* pcchBin, __out unsigned char** ppBin)
-{
-    *pcchBin = strlen(pszHex) / 2;
-    if ((((*pcchBin) / nAlign) * nAlign) < (*pcchBin))
-    {
-        *pcchBin = (1 + ((*pcchBin) / nAlign)) * nAlign;
-    }
-
-    *ppBin = new unsigned char[*pcchBin];
-
-    HexToBin(pszHex, *pcchBin, *ppBin);
-}
 
 void InitCodebook(char* pKeyData)
 {
@@ -345,52 +277,6 @@ INT_PTR CALLBACK SearchDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
     return (INT_PTR)FALSE;
 }
 
-
-void GenNonce(__inout_bcount(k_cSpmBlockSizeBytes) BYTE* pNonce, __inout_z char * pszHashKey = nullptr)
-{
-    char szDefaultHashKey[65] = "3BCC8CBF2103DDC295E70BCC305C6BB232479DD2792204A2CA83CE3BEFF9EA43";
-    BYTE rgHashKey[4 * sizeof(SPM_WORD)];
-    FBC_CRYPT* pFbcOneWayHash = new FBC_CRYPT();
-    BYTE* pBuf = new BYTE[k_cSpmBlockSizeBytes];
-    FILETIME ft = { 0 };
-
-    *reinterpret_cast<clock_t*>(pNonce) = clock();
-    size_t i = sizeof(clock_t);
-
-    *reinterpret_cast<ULONGLONG*>(pNonce + i) = GetTickCount64();
-    i += sizeof(ULONGLONG);
-
-    ::GetSystemTimeAsFileTime(&ft);
-    *reinterpret_cast<DWORD*>(pNonce + i) = ft.dwLowDateTime;
-    i += sizeof(DWORD);
-    *reinterpret_cast<DWORD*>(pNonce + i) = ft.dwHighDateTime;
-    i += sizeof(DWORD);
-
-    *reinterpret_cast<DWORD*>(pNonce + i) = GetCurrentProcessId();
-    i += sizeof(DWORD);
-
-    *reinterpret_cast<DWORD*>(pNonce + i) = GetCurrentThreadId();
-    i += sizeof(DWORD);
-
-    ::memcpy(pBuf, pNonce, k_cSpmBlockSizeBytes);
-
-    // apply one way hash to the noce so we dont leak info in the nonce
-    if (pszHashKey == nullptr)
-    {
-        ::HexToBin(szDefaultHashKey, 4 * sizeof(SPM_WORD), rgHashKey);
-    }
-    else
-    {
-        ::HexToBin(pszHashKey, 4 * sizeof(SPM_WORD), rgHashKey);
-    }
-
-    pFbcOneWayHash->SetKeys(rgHashKey, 4 * sizeof(SPM_WORD));
-    pFbcOneWayHash->Encrypt(pBuf, k_cSpmBlockSizeBytes);
-    ::memcpy(pNonce, pBuf, k_cSpmBlockSizeBytes /2);
-    pFbcOneWayHash->Encrypt(pBuf, k_cSpmBlockSizeBytes);
-    ::memcpy(pNonce + k_cSpmBlockSizeBytes / 2, pBuf + k_cSpmBlockSizeBytes / 2, k_cSpmBlockSizeBytes / 2);
-
-}
 
 // Apply Nonce will set keys on pCryptor
 // use the realy key to encrypt the nonce to create a temporary key for this file
