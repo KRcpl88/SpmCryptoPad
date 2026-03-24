@@ -1,0 +1,32 @@
+name: Release CryptoPad
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Add MSBuild to PATH
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Build CryptoPad
+        run: >
+          msbuild CryptoPad/CryptoPad.vcxproj
+          /p:Configuration=Release
+          /p:Platform=x64
+          /p:PlatformToolset=v143
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: x64/Release/CryptoPad.exe
