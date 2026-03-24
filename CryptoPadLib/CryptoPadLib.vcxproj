@@ -111,13 +111,13 @@
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="..\CryptoPad\CryptoPadUtils.h" />
+    <ClInclude Include="CryptoPadUtils.h" />
     <ClInclude Include="..\CryptoPad\framework.h" />
-    <ClInclude Include="..\CryptoPad\SpmBlockCipher64.h" />
+    <ClInclude Include="SpmBlockCipher64.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\CryptoPad\CryptoPadUtils.cpp" />
-    <ClCompile Include="..\CryptoPad\SpmBlockCipher64.cpp" />
+    <ClCompile Include="CryptoPadUtils.cpp" />
+    <ClCompile Include="SpmBlockCipher64.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
