@@ -111,13 +111,11 @@
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="..\CryptoPad\CryptoPad.h" />
     <ClInclude Include="..\CryptoPad\CryptoPadUtils.h" />
     <ClInclude Include="..\CryptoPad\framework.h" />
     <ClInclude Include="..\CryptoPad\SpmBlockCipher64.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\CryptoPad\CryptoPad.cpp" />
     <ClCompile Include="..\CryptoPad\CryptoPadUtils.cpp" />
     <ClCompile Include="..\CryptoPad\SpmBlockCipher64.cpp" />
   </ItemGroup>

@@ -147,6 +147,9 @@
     <ClInclude Include="targetver.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="CryptoPad.cpp" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="..\CryptoPadLib\CryptoPadLib.vcxproj">
       <Project>{B2E1A3C4-D5F6-7890-1234-ABCDEF567890}</Project>
     </ProjectReference>
