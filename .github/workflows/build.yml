@@ -25,6 +25,28 @@ jobs:
       - name: Add MSBuild to PATH
         uses: microsoft/setup-msbuild@v2
 
+      - name: Fix googletest NuGet package version
+        shell: pwsh
+        run: |
+          $offlinePath = "C:\Program Files (x86)\Microsoft SDKs\NuGetPackages"
+          $prefix = "Microsoft.googletest.v142.windesktop.msvcstl.dyn.rt.dyn"
+          Write-Host "Searching for $prefix in $offlinePath ..."
+          Write-Host "Available googletest packages:"
+          Get-ChildItem -Path $offlinePath -Filter "Microsoft.googletest*" -Directory -ErrorAction SilentlyContinue | ForEach-Object { Write-Host "  $($_.Name)" }
+          $pkg = Get-ChildItem -Path $offlinePath -Filter "$prefix.*" -Directory -ErrorAction SilentlyContinue | Select-Object -First 1
+          if (-not $pkg) {
+            Write-Error "Package '$prefix' not found in $offlinePath"
+            exit 1
+          }
+          $version = $pkg.Name.Substring($prefix.Length + 1)
+          Write-Host "Found $prefix version: $version"
+          # Update packages.config
+          $pc = "CryptoPadTests\packages.config"
+          (Get-Content $pc) -replace 'version="[^"]+"', "version=`"$version`"" | Set-Content $pc
+          # Update CryptoPadTests.vcxproj
+          $proj = "CryptoPadTests\CryptoPadTests.vcxproj"
+          (Get-Content $proj -Raw) -replace [regex]::Escape("$prefix.1.8.1.7"), "$prefix.$version" | Set-Content $proj
+
       - name: Restore NuGet packages
         run: nuget restore CryptoPad.sln
 
