@@ -27,10 +27,10 @@
     <ClInclude Include="CryptoPad.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="CryptoPadUtils.h">
+    <ClInclude Include="..\CryptoPadLib\CryptoPadUtils.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="SpmBlockCipher64.h">
+    <ClInclude Include="..\CryptoPadLib\SpmBlockCipher64.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

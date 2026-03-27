@@ -1,4 +1,4 @@
-#include "framework.h"
+#include "../CryptoPad/framework.h"
 #include "SpmBlockCipher64.h"
 
 

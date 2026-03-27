@@ -3,8 +3,8 @@
 
 #include "framework.h"
 #include "CryptoPad.h"
-#include "SpmBlockCipher64.h"
-#include "CryptoPadUtils.h"
+#include "../CryptoPadLib/SpmBlockCipher64.h"
+#include "../CryptoPadLib/CryptoPadUtils.h"
 
 #define MAX_LOADSTRING 100
 

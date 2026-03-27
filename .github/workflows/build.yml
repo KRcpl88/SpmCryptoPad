@@ -27,7 +27,7 @@ jobs:
 
       - name: Build CryptoPad
         run: >
-          msbuild CryptoPad/CryptoPad.vcxproj
+          msbuild CryptoPad.sln
           /p:Configuration=${{ matrix.configuration }}
           /p:Platform=${{ matrix.platform }}
           /p:PlatformToolset=v143
