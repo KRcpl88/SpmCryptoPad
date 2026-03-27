@@ -29,12 +29,8 @@ jobs:
       - name: Create CryptoPad.zip
         run: Compress-Archive -Path x64/Release/CryptoPad.exe -DestinationPath CryptoPad.zip
 
-      - name: Create CryptoPad.tar.gz
-        run: tar -czf CryptoPad.tar.gz -C x64/Release CryptoPad.exe
-
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           files: |
             CryptoPad.zip
-            CryptoPad.tar.gz
