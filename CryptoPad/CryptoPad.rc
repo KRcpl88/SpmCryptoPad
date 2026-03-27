@@ -85,7 +85,7 @@ CAPTION "About CryptoPad"
 FONT 8, "MS Shell Dlg", 0, 0, 0x1
 BEGIN
     ICON            IDR_MAINFRAME,IDC_STATIC,14,14,21,20
-    LTEXT           "CryptoPad, Version 1.0.02",IDC_STATIC,42,14,114,8,SS_NOPREFIX
+    LTEXT           "CryptoPad, Version 1.0.03",IDC_STATIC,42,14,114,8,SS_NOPREFIX
     LTEXT           "Copyright (c) 2022",IDC_STATIC,42,26,114,8
     DEFPUSHBUTTON   "OK",IDOK,113,41,50,14,WS_GROUP
 END
