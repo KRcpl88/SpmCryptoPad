@@ -70,6 +70,9 @@
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <OutDir>$(MSBuildThisFileDirectory)..\$(Platform)\$(Configuration)\</OutDir>
+  </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
@@ -125,8 +128,10 @@
   </ItemGroup>
   <ItemDefinitionGroup>
     <PostBuildEvent>
-      <Command>msbuild "$(SolutionDir)CryptoPadLibTests\CryptoPadLibTests.vcxproj" /p:Configuration=$(Configuration) /p:Platform=$(Platform) /p:SolutionDir="$(SolutionDir)" /p:BuildProjectReferences=false
-"$(DevEnvDir)CommonExtensions\Microsoft\TestWindow\vstest.console.exe" "$(SolutionDir)$(Platform)\$(Configuration)\CryptoPadLibTests.dll"</Command>
+      <Command>for /f "usebackq tokens=*" %%i in (`"$(MSBuildProgramFiles32)Microsoft Visual Studio\Installer\vswhere.exe" -latest -products * -property installationPath`) do set VSINSTALLDIR=%%i
+if "%VSINSTALLDIR%"=="" (echo ERROR: Could not locate Visual Studio installation via vswhere.exe &amp;&amp; exit /b 1)
+msbuild "$(MSBuildThisFileDirectory)..\CryptoPadLibTests\CryptoPadLibTests.vcxproj" /p:Configuration=$(Configuration) /p:Platform=$(Platform) /p:BuildProjectReferences=false
+"%VSINSTALLDIR%\Common7\IDE\CommonExtensions\Microsoft\TestWindow\vstest.console.exe" "$(MSBuildThisFileDirectory)..\$(Platform)\$(Configuration)\CryptoPadLibTests.dll"</Command>
       <Message>Running GenNonce unit tests</Message>
     </PostBuildEvent>
   </ItemDefinitionGroup>
