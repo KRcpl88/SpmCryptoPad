@@ -128,7 +128,7 @@
   </ItemGroup>
   <ItemDefinitionGroup>
     <PostBuildEvent>
-      <Command>for /f "usebackq tokens=*" %%i in (`"$(MSBuildProgramFiles32)Microsoft Visual Studio\Installer\vswhere.exe" -latest -products * -property installationPath`) do set VSINSTALLDIR=%%i
+      <Command>for /f "usebackq tokens=*" %%i in (`"$(MSBuildProgramFiles32)\Microsoft Visual Studio\Installer\vswhere.exe" -latest -products * -property installationPath`) do set VSINSTALLDIR=%%i
 if "%VSINSTALLDIR%"=="" (echo ERROR: Could not locate Visual Studio installation via vswhere.exe &amp;&amp; exit /b 1)
 msbuild "$(MSBuildThisFileDirectory)..\CryptoPadLibTests\CryptoPadLibTests.vcxproj" /p:Configuration=$(Configuration) /p:Platform=$(Platform) /p:BuildProjectReferences=false
 "%VSINSTALLDIR%\Common7\IDE\CommonExtensions\Microsoft\TestWindow\vstest.console.exe" "$(MSBuildThisFileDirectory)..\$(Platform)\$(Configuration)\CryptoPadLibTests.dll"</Command>
