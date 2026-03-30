@@ -59,4 +59,5 @@ jobs:
           $vstest = & "C:\Program Files (x86)\Microsoft Visual Studio\Installer\vswhere.exe" `
             -latest -products * `
             -find "**\vstest.console.exe" | Select-Object -First 1
+          if (-not $vstest) { Write-Error "vstest.console.exe not found"; exit 1 }
           & $vstest test-binaries\CryptoPadLibTests.dll
