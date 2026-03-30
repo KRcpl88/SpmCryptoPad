@@ -22,7 +22,6 @@ void CSimplePrng64::SetKeys(__in_ecount(cKeyData) const unsigned char* pKeyData,
 CSpmBlockCipher64::BLOCK_MODE CSpmBlockCipher64::s_eBlockMode = CSpmBlockCipher64::BLOCK_MODE::NoPermutation;
 SPM_SBOX_WORD CSpmBlockCipher64::s_rgCodebook[SPM_SBOX_WIDTH] = { 0 };
 unsigned char* CSpmBlockCipher64::s_prgPermutationCodebook;
-bool CSpmBlockCipher64::s_bCodebookConstructed = false;
 
 void CSpmBlockCipher64::s_ConstructCodebook(CSpmBlockCipher64::BLOCK_MODE eBlockMode)
 {
@@ -38,7 +37,6 @@ void CSpmBlockCipher64::s_ConstructCodebook(CSpmBlockCipher64::BLOCK_MODE eBlock
     s_eBlockMode = eBlockMode;
     if (eBlockMode == BLOCK_MODE::NoPermutation)
     {
-        s_bCodebookConstructed = true;
         return;
     }
 
@@ -58,7 +56,6 @@ void CSpmBlockCipher64::s_ConstructCodebook(CSpmBlockCipher64::BLOCK_MODE eBlock
 
         s_prgPermutationCodebook[i] = static_cast<unsigned char>(i);
     }
-    s_bCodebookConstructed = true;
 }
 
 void CSpmBlockCipher64::s_CheckCodebook()
@@ -139,12 +136,6 @@ void CSpmBlockCipher64::InitSbox()
 {
     // math is specific to 64 bit version
     C_ASSERT(sizeof(size_t) == sizeof(INT64));
-
-    // ensure the codebook has been constructed before use
-    if (!s_bCodebookConstructed)
-    {
-        s_ConstructCodebook(BLOCK_MODE::NoPermutation);
-    }
 
     // initialize Sbox values from codebook
     ::memcpy(m_rgSbox, s_rgCodebook, sizeof(m_rgSbox));

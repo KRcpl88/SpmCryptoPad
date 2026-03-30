@@ -88,7 +88,6 @@ protected:
 public:
     static SPM_SBOX_WORD s_rgCodebook[SPM_SBOX_WIDTH];
     static unsigned char* s_prgPermutationCodebook;
-    static bool s_bCodebookConstructed;
 
     static void s_ConstructCodebook(BLOCK_MODE eBlockMode);
     static void s_PermuteCodebook(int n, __in_ecount(cKeyData) const unsigned char* pKeyData, size_t cKeyData);

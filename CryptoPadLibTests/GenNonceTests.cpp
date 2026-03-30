@@ -5,6 +5,11 @@ using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
 namespace CryptoPadLibTests
 {
+    TEST_MODULE_INITIALIZE(ModuleInitialize)
+    {
+        FBC_CRYPT::s_ConstructCodebook(CSpmBlockCipher64::BLOCK_MODE::Permutation);
+    }
+
     TEST_CLASS(GenNonceTests)
     {
     public:
