@@ -31,3 +31,33 @@ jobs:
           /p:Configuration=${{ matrix.configuration }}
           /p:Platform=${{ matrix.platform }}
           /p:PlatformToolset=v143
+
+      - name: Upload test binaries
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-binaries-${{ matrix.platform }}-${{ matrix.configuration }}
+          path: ${{ matrix.platform }}/${{ matrix.configuration }}/CryptoPadLibTests.dll
+
+  test:
+    needs: build
+    runs-on: windows-latest
+
+    strategy:
+      matrix:
+        configuration: [Release]
+        platform: [x64]
+
+    steps:
+      - name: Download test binaries
+        uses: actions/download-artifact@v4
+        with:
+          name: test-binaries-${{ matrix.platform }}-${{ matrix.configuration }}
+          path: test-binaries
+
+      - name: Run unit tests
+        run: |
+          $vstest = & "C:\Program Files (x86)\Microsoft Visual Studio\Installer\vswhere.exe" `
+            -latest -products * `
+            -find "**\vstest.console.exe" | Select-Object -First 1
+          if (-not $vstest) { Write-Error "vstest.console.exe not found"; exit 1 }
+          & $vstest test-binaries\CryptoPadLibTests.dll
