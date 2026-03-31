@@ -109,6 +109,72 @@ public:
     // encryption and decryption are symetric opertations
     virtual void Encrypt(__in_bcount(cbData) unsigned char * pData, size_t cbData);
     virtual void Decrypt(__in_bcount(cbData) unsigned char * pData, size_t cbData);
+
+    // Encrypt sub-operations (static for granular unit testing)
+    static void s_SmForwardPass(
+        __inout_bcount(k_cSpmBlockSizeBytes) unsigned char* pBlock,
+        __inout SPM_PRNG* pPrngMask,
+        __in_ecount(SPM_SBOX_WIDTH) const SPM_SBOX_WORD* prgSbox);
+
+    static void s_SmReversePass(
+        __inout_bcount(k_cSpmBlockSizeBytes) unsigned char* pBlock,
+        __inout SPM_PRNG* pPrngMask,
+        __in_ecount(SPM_SBOX_WIDTH) const SPM_SBOX_WORD* prgSbox);
+
+    static void s_ApplyPermutation(
+        __inout_bcount(k_cSpmBlockSizeBytes) unsigned char* pBlock,
+        __in_ecount(k_cSpmBlockSizeBytes) const unsigned char* rgPermutation,
+        __out_ecount(k_cSpmBlockSizeBytes) unsigned char* rgPermutationBuffer);
+
+    static void s_EncryptRound(
+        __inout_bcount(k_cSpmBlockSizeBytes) unsigned char* pBlock,
+        __inout SPM_PRNG* pPrngMask,
+        __in_ecount(SPM_SBOX_WIDTH) const SPM_SBOX_WORD* prgSbox,
+        BLOCK_MODE eBlockMode,
+        __in_ecount(k_cSpmBlockSizeBytes) const unsigned char* rgBlockPermutation,
+        __out_ecount(k_cSpmBlockSizeBytes) unsigned char* rgPermutationBuffer);
+
+    static void s_EncryptBlock(
+        __inout_bcount(k_cSpmBlockSizeBytes) unsigned char* pBlock,
+        __inout SPM_PRNG* pPrngMask,
+        __inout SPM_PRNG* pPrngSBox,
+        __in_ecount(SPM_SBOX_WIDTH) const SPM_SBOX_WORD* prgSbox,
+        BLOCK_MODE eBlockMode,
+        __in_ecount(k_cSpmBlockSizeBytes) const unsigned char* prgBaseBlockPermutation);
+
+    // Decrypt sub-operations (static for granular unit testing)
+    static void s_ReverseSmForwardPass(
+        __inout_bcount(k_cSpmBlockSizeBytes) unsigned char* pBlock,
+        __in_ecount(SPM_SBOX_WIDTH) const SPM_SBOX_WORD* prgReverseSbox,
+        __in_ecount(6 * k_cSpmBlockInflectionIndex - 3) const SPM_SBOX_WORD* rgMask,
+        __inout size_t* pl);
+
+    static void s_ReverseSmReversePass(
+        __inout_bcount(k_cSpmBlockSizeBytes) unsigned char* pBlock,
+        __in_ecount(SPM_SBOX_WIDTH) const SPM_SBOX_WORD* prgReverseSbox,
+        __in_ecount(6 * k_cSpmBlockInflectionIndex - 3) const SPM_SBOX_WORD* rgMask,
+        __inout size_t* pl);
+
+    static void s_FillDecryptMasks(
+        __out_ecount(6 * k_cSpmBlockInflectionIndex - 3) SPM_SBOX_WORD* rgMask,
+        __inout SPM_PRNG* pPrngMask);
+
+    static void s_DecryptRound(
+        __inout_bcount(k_cSpmBlockSizeBytes) unsigned char* pBlock,
+        __in_ecount(SPM_SBOX_WIDTH) const SPM_SBOX_WORD* prgReverseSbox,
+        __in_ecount(6 * k_cSpmBlockInflectionIndex - 3) const SPM_SBOX_WORD* rgMask,
+        __inout size_t* pl,
+        BLOCK_MODE eBlockMode,
+        __in_ecount(k_cSpmBlockSizeBytes) const unsigned char* rgReverseBlockPermutation,
+        __out_ecount(k_cSpmBlockSizeBytes) unsigned char* rgPermutationBuffer);
+
+    static void s_DecryptBlock(
+        __inout_bcount(k_cSpmBlockSizeBytes) unsigned char* pBlock,
+        __inout SPM_PRNG* pPrngMask,
+        __inout SPM_PRNG* pPrngSBox,
+        __in_ecount(SPM_SBOX_WIDTH) const SPM_SBOX_WORD* prgReverseSbox,
+        BLOCK_MODE eBlockMode,
+        __in_ecount(k_cSpmBlockSizeBytes) const unsigned char* prgBaseBlockPermutation);
 };
 
 typedef CSpmBlockCipher64 FBC_CRYPT;
