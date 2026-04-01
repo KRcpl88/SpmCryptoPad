@@ -51,6 +51,8 @@ Hungarian notation is used throughout:
 | `p` / `psz` | Pointer / pointer to string | `pBuffer`, `pszPassword` |
 | `dw` | DWORD | `dwBytesRead` |
 | `cb` | Count of bytes | `cbFileSize` |
+| `c` | Count of elements | `cBlocks`, `cMasks` |
+| `rg` | Fixed-size array | `rgBlock`, `rgNonce` |
 | `f` | Boolean flag | `fOK` |
 | `k_` | Constant | `k_cSpmBlockSizeBytes` |
 | `C` | Class prefix | `CSpmBlockCipher64` |

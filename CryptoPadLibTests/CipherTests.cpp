@@ -56,11 +56,11 @@ namespace CryptoPadLibTests
             CSpmBlockCipher64 cipherForSbox;
             cipherForSbox.SetKeys(s_rgTestKey, sizeof(s_rgTestKey));
 
-            unsigned char block[k_cSpmBlockSizeBytes];
-            FillTestBlock(block);
+            unsigned char rgBlock[k_cSpmBlockSizeBytes];
+            FillTestBlock(rgBlock);
 
-            unsigned char original[k_cSpmBlockSizeBytes];
-            ::memcpy(original, block, k_cSpmBlockSizeBytes);
+            unsigned char rgOriginal[k_cSpmBlockSizeBytes];
+            ::memcpy(rgOriginal, rgBlock, k_cSpmBlockSizeBytes);
 
             // Use the cipher's encrypt to get sbox - we access via full encrypt/decrypt roundtrip instead
             // For direct access, call s_SmForwardPass with the cipher's internal sbox
@@ -69,8 +69,8 @@ namespace CryptoPadLibTests
 
             // Actually, we can test via full roundtrip at the pass level
             // s_SmForwardPass should change the data
-            cipher.Encrypt(block, k_cSpmBlockSizeBytes);
-            bool fChanged = (memcmp(block, original, k_cSpmBlockSizeBytes) != 0);
+            cipher.Encrypt(rgBlock, k_cSpmBlockSizeBytes);
+            bool fChanged = (memcmp(rgBlock, rgOriginal, k_cSpmBlockSizeBytes) != 0);
             Assert::IsTrue(fChanged, L"Encrypt (which calls s_SmForwardPass) should modify data");
         }
 
@@ -81,14 +81,14 @@ namespace CryptoPadLibTests
             cipher1.SetKeys(s_rgTestKey, sizeof(s_rgTestKey));
             cipher2.SetKeys(s_rgTestKey, sizeof(s_rgTestKey));
 
-            unsigned char block1[k_cSpmBlockSizeBytes], block2[k_cSpmBlockSizeBytes];
-            FillTestBlock(block1);
-            FillTestBlock(block2);
+            unsigned char rgBlock1[k_cSpmBlockSizeBytes], rgBlock2[k_cSpmBlockSizeBytes];
+            FillTestBlock(rgBlock1);
+            FillTestBlock(rgBlock2);
 
-            cipher1.Encrypt(block1, k_cSpmBlockSizeBytes);
-            cipher2.Encrypt(block2, k_cSpmBlockSizeBytes);
+            cipher1.Encrypt(rgBlock1, k_cSpmBlockSizeBytes);
+            cipher2.Encrypt(rgBlock2, k_cSpmBlockSizeBytes);
 
-            bool fEqual = (memcmp(block1, block2, k_cSpmBlockSizeBytes) == 0);
+            bool fEqual = (memcmp(rgBlock1, rgBlock2, k_cSpmBlockSizeBytes) == 0);
             Assert::IsTrue(fEqual, L"Same key should produce identical ciphertext");
         }
 
@@ -98,57 +98,57 @@ namespace CryptoPadLibTests
 
         TEST_METHOD(TestApplyPermutationMovesBytes)
         {
-            unsigned char block[k_cSpmBlockSizeBytes];
-            unsigned char buffer[k_cSpmBlockSizeBytes] = { 0 };
-            unsigned char permutation[k_cSpmBlockSizeBytes];
-            unsigned char original[k_cSpmBlockSizeBytes];
+            unsigned char rgBlock[k_cSpmBlockSizeBytes];
+            unsigned char rgBuffer[k_cSpmBlockSizeBytes] = { 0 };
+            unsigned char rgPermutation[k_cSpmBlockSizeBytes];
+            unsigned char rgOriginal[k_cSpmBlockSizeBytes];
 
-            FillTestBlock(block);
-            ::memcpy(original, block, k_cSpmBlockSizeBytes);
+            FillTestBlock(rgBlock);
+            ::memcpy(rgOriginal, rgBlock, k_cSpmBlockSizeBytes);
 
             // Create a simple rotation permutation: each byte moves one position forward
             for (size_t i = 0; i < k_cSpmBlockSizeBytes; ++i)
             {
-                permutation[i] = static_cast<unsigned char>((i + 1) % k_cSpmBlockSizeBytes);
+                rgPermutation[i] = static_cast<unsigned char>((i + 1) % k_cSpmBlockSizeBytes);
             }
 
-            CSpmBlockCipher64::s_ApplyPermutation(block, permutation, buffer);
+            CSpmBlockCipher64::s_ApplyPermutation(rgBlock, rgPermutation, rgBuffer);
 
             // Verify that bytes were moved
-            bool fChanged = (memcmp(block, original, k_cSpmBlockSizeBytes) != 0);
+            bool fChanged = (memcmp(rgBlock, rgOriginal, k_cSpmBlockSizeBytes) != 0);
             Assert::IsTrue(fChanged, L"Permutation should rearrange bytes");
 
             // Verify specific byte: original[0] should now be at position permutation[0]=1
-            Assert::AreEqual(original[0], block[1], L"block[1] should equal original[0] after rotation permutation");
+            Assert::AreEqual(rgOriginal[0], rgBlock[1], L"block[1] should equal original[0] after rotation permutation");
         }
 
         TEST_METHOD(TestApplyPermutationRoundtrip)
         {
-            unsigned char block[k_cSpmBlockSizeBytes];
-            unsigned char buffer[k_cSpmBlockSizeBytes] = { 0 };
-            unsigned char permutation[k_cSpmBlockSizeBytes];
-            unsigned char reversePermutation[k_cSpmBlockSizeBytes];
-            unsigned char original[k_cSpmBlockSizeBytes];
+            unsigned char rgBlock[k_cSpmBlockSizeBytes];
+            unsigned char rgBuffer[k_cSpmBlockSizeBytes] = { 0 };
+            unsigned char rgPermutation[k_cSpmBlockSizeBytes];
+            unsigned char rgReversePermutation[k_cSpmBlockSizeBytes];
+            unsigned char rgOriginal[k_cSpmBlockSizeBytes];
 
-            FillTestBlock(block);
-            ::memcpy(original, block, k_cSpmBlockSizeBytes);
+            FillTestBlock(rgBlock);
+            ::memcpy(rgOriginal, rgBlock, k_cSpmBlockSizeBytes);
 
             // Create a rotation permutation
             for (size_t i = 0; i < k_cSpmBlockSizeBytes; ++i)
             {
-                permutation[i] = static_cast<unsigned char>((i + 1) % k_cSpmBlockSizeBytes);
+                rgPermutation[i] = static_cast<unsigned char>((i + 1) % k_cSpmBlockSizeBytes);
             }
 
             // Build reverse permutation
             for (size_t i = 0; i < k_cSpmBlockSizeBytes; ++i)
             {
-                reversePermutation[permutation[i]] = static_cast<unsigned char>(i);
+                rgReversePermutation[rgPermutation[i]] = static_cast<unsigned char>(i);
             }
 
-            CSpmBlockCipher64::s_ApplyPermutation(block, permutation, buffer);
-            CSpmBlockCipher64::s_ApplyPermutation(block, reversePermutation, buffer);
+            CSpmBlockCipher64::s_ApplyPermutation(rgBlock, rgPermutation, rgBuffer);
+            CSpmBlockCipher64::s_ApplyPermutation(rgBlock, rgReversePermutation, rgBuffer);
 
-            bool fEqual = (memcmp(block, original, k_cSpmBlockSizeBytes) == 0);
+            bool fEqual = (memcmp(rgBlock, rgOriginal, k_cSpmBlockSizeBytes) == 0);
             Assert::IsTrue(fEqual, L"Applying permutation then reverse permutation should restore original data");
         }
 
