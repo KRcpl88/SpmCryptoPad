@@ -18,9 +18,7 @@ namespace CryptoPadLibTests
         FBC_CRYPT::s_PermuteCodebook(16, pKey, cKey);
         delete[] pKey;
 
-#ifdef _DEBUG
         FBC_CRYPT::s_CheckCodebook();
-#endif
     }
 
 	TEST_CLASS(GenNonceTests)
