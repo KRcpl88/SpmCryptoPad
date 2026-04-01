@@ -67,7 +67,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 //
 ATOM MyRegisterClass(HINSTANCE hInstance)
 {
-    WNDCLASSEXW wcex;
+    WNDCLASSEXW wcex = { 0 };
 
     wcex.cbSize = sizeof(WNDCLASSEX);
 
@@ -118,7 +118,7 @@ BOOL Run(HINSTANCE hInstance, int nCmdShow)
 
     HACCEL hAccelTable = ::LoadAcceleratorsW(hInstance, MAKEINTRESOURCE(IDC_CRYPTOPAD));
 
-    MSG msg;
+    MSG msg = { 0 };
 
     // Main message loop:
     while (::GetMessageW(&msg, nullptr, 0, 0))
@@ -663,7 +663,7 @@ Done:
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
     LPWINDOWPOS pWp = nullptr;
-    OPENFILENAME ofn;        // common dialog box structure
+    OPENFILENAME ofn = { 0 };        // common dialog box structure
     WCHAR szFile[260] = { 0 };       // buffer for file name
     WCHAR* pszText = nullptr;
 
