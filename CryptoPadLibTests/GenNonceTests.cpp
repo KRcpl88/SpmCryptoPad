@@ -16,64 +16,64 @@ namespace CryptoPadLibTests
 		
         TEST_METHOD(TestGenNonceOutputNotAllZeros)
         {
-            BYTE nonce[k_cSpmBlockSizeBytes] = { 0 };
+            BYTE rgNonce[k_cSpmBlockSizeBytes] = { 0 };
 
-            GenNonce(nonce);
+            GenNonce(rgNonce);
 
-            bool allZero = true;
+            bool fAllZero = true;
             for (size_t i = 0; i < k_cSpmBlockSizeBytes; i++)
             {
-                if (nonce[i] != 0)
+                if (rgNonce[i] != 0)
                 {
-                    allZero = false;
+                    fAllZero = false;
                     break;
                 }
             }
-            Assert::IsFalse(allZero, L"GenNonce should produce non-zero output");
+            Assert::IsFalse(fAllZero, L"GenNonce should produce non-zero output");
         }
 
         TEST_METHOD(TestGenNonceTwoCallsProduceDifferentResults)
         {
-            BYTE nonce1[k_cSpmBlockSizeBytes] = { 0 };
-            BYTE nonce2[k_cSpmBlockSizeBytes] = { 0 };
+            BYTE rgNonce1[k_cSpmBlockSizeBytes] = { 0 };
+            BYTE rgNonce2[k_cSpmBlockSizeBytes] = { 0 };
 
-            GenNonce(nonce1);
-            GenNonce(nonce2);
+            GenNonce(rgNonce1);
+            GenNonce(rgNonce2);
 
-            bool noncesAreEqual = (memcmp(nonce1, nonce2, k_cSpmBlockSizeBytes) == 0);
-            Assert::IsFalse(noncesAreEqual, L"Two consecutive calls to GenNonce should produce different results");
+            bool fNoncesAreEqual = (memcmp(rgNonce1, rgNonce2, k_cSpmBlockSizeBytes) == 0);
+            Assert::IsFalse(fNoncesAreEqual, L"Two consecutive calls to GenNonce should produce different results");
         }
 
         TEST_METHOD(TestGenNonceWithCustomHashKey)
         {
-            BYTE nonce[k_cSpmBlockSizeBytes] = { 0 };
-            char customKey[] = "1234567890ABCDEF1234567890ABCDEF1234567890ABCDEF1234567890ABCDEF";
+            BYTE rgNonce[k_cSpmBlockSizeBytes] = { 0 };
+            char rgCustomKey[] = "1234567890ABCDEF1234567890ABCDEF1234567890ABCDEF1234567890ABCDEF";
 
-            GenNonce(nonce, customKey);
+            GenNonce(rgNonce, rgCustomKey);
 
-            bool allZero = true;
+            bool fAllZero = true;
             for (size_t i = 0; i < k_cSpmBlockSizeBytes; i++)
             {
-                if (nonce[i] != 0)
+                if (rgNonce[i] != 0)
                 {
-                    allZero = false;
+                    fAllZero = false;
                     break;
                 }
             }
-            Assert::IsFalse(allZero, L"GenNonce with custom hash key should produce non-zero output");
+            Assert::IsFalse(fAllZero, L"GenNonce with custom hash key should produce non-zero output");
         }
 
         TEST_METHOD(TestGenNonceDefaultAndCustomHashKeyProduceDifferentResults)
         {
-            BYTE nonce1[k_cSpmBlockSizeBytes] = { 0 };
-            BYTE nonce2[k_cSpmBlockSizeBytes] = { 0 };
-            char customKey[] = "1234567890ABCDEF1234567890ABCDEF1234567890ABCDEF1234567890ABCDEF";
+            BYTE rgNonce1[k_cSpmBlockSizeBytes] = { 0 };
+            BYTE rgNonce2[k_cSpmBlockSizeBytes] = { 0 };
+            char rgCustomKey[] = "1234567890ABCDEF1234567890ABCDEF1234567890ABCDEF1234567890ABCDEF";
 
-            GenNonce(nonce1);
-            GenNonce(nonce2, customKey);
+            GenNonce(rgNonce1);
+            GenNonce(rgNonce2, rgCustomKey);
 
-            bool noncesAreEqual = (memcmp(nonce1, nonce2, k_cSpmBlockSizeBytes) == 0);
-            Assert::IsFalse(noncesAreEqual, L"GenNonce with default and custom hash key should produce different results");
+            bool fNoncesAreEqual = (memcmp(rgNonce1, rgNonce2, k_cSpmBlockSizeBytes) == 0);
+            Assert::IsFalse(fNoncesAreEqual, L"GenNonce with default and custom hash key should produce different results");
         }
 
 	};

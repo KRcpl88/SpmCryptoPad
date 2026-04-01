@@ -57,6 +57,7 @@ Hungarian notation is used throughout:
 | `k_` | Constant | `k_cSpmBlockSizeBytes` |
 | `C` | Class prefix | `CSpmBlockCipher64` |
 | `m_` | Member variable | `m_prngSBox` |
+| `s_` | Static function or method prefix | `s_InitCipher`, `s_FillTestBlock` |
 
 Classes and functions use PascalCase. Resource IDs use standard Win32 prefixes (`IDM_`, `IDD_`, `IDC_`, `IDS_`, `IDI_`).
 
