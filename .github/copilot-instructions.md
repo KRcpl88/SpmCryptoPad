@@ -57,14 +57,22 @@ Hungarian notation is used throughout:
 | `k_` | Constant | `k_cSpmBlockSizeBytes` |
 | `C` | Class prefix | `CSpmBlockCipher64` |
 | `m_` | Member variable | `m_prngSBox` |
-| `s_` | Static function or method prefix | `s_InitCipher`, `s_FillTestBlock` |
+| `s_` | Static member variable or static method **within a class** | `s_GetKeyWidth` |
+| `g_` | Data variable at global or namespace scope | `g_rgTestKey` |
 
 Classes and functions use PascalCase. Resource IDs use standard Win32 prefixes (`IDM_`, `IDD_`, `IDC_`, `IDS_`, `IDI_`).
 
 ### Scope resolution
 
 - Always use the global scope resolution operator `::` when calling global/C-runtime functions from inside a class method (e.g., `::memcmp`, `::memcpy`, `::memset`, `::CloseHandle`).
-- Always use the enclosing namespace or class name when calling static helper functions defined at namespace scope from inside a class method (e.g., `CryptoPadLibTests::s_FillTestBlock(...)`).
+- Always use the enclosing namespace or class name when calling static helper functions defined at namespace scope from inside a class method (e.g., `CryptoPadLibTests::FillTestBlock(...)`).
+
+### Static function and variable scope rules
+
+- Static functions at **global or namespace scope** use plain **PascalCase** with no prefix (e.g., `FillTestBlock`, `InitCipher`).
+- Static member functions **within a class** use the `s_` prefix (e.g., `s_GetKeyWidth`, `s_ApplyPermutation`).
+- Static data variables at **global or namespace scope** use the `g_` prefix (e.g., `g_rgTestKey`).
+- Static data members **within a class** use the `s_` prefix (e.g., `s_rgSBox`).
 
 ### Error handling
 
