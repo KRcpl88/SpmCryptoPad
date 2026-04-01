@@ -61,6 +61,11 @@ Hungarian notation is used throughout:
 
 Classes and functions use PascalCase. Resource IDs use standard Win32 prefixes (`IDM_`, `IDD_`, `IDC_`, `IDS_`, `IDI_`).
 
+### Scope resolution
+
+- Always use the global scope resolution operator `::` when calling global/C-runtime functions from inside a class method (e.g., `::memcmp`, `::memcpy`, `::memset`, `::CloseHandle`).
+- Always use the enclosing namespace or class name when calling static helper functions defined at namespace scope from inside a class method (e.g., `CryptoPadLibTests::s_FillTestBlock(...)`).
+
 ### Error handling
 
 No C++ exceptions. Errors are handled with Win32-style return codes (`BOOL`, `HRESULT`, `INVALID_HANDLE_VALUE`) and `goto`-based cleanup:

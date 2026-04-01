@@ -47,17 +47,17 @@ namespace CryptoPadLibTests
         TEST_METHOD(TestSmForwardPassModifiesData)
         {
             CSpmBlockCipher64 cipher;
-            s_InitCipher(cipher);
+            CryptoPadLibTests::s_InitCipher(cipher);
 
             CSimplePrng64 prngSBox, prngMask;
-            s_InitPrngs(prngSBox, prngMask);
+            CryptoPadLibTests::s_InitPrngs(prngSBox, prngMask);
 
             // Build sbox via a fresh cipher to get m_rgSbox
             CSpmBlockCipher64 cipherForSbox;
             cipherForSbox.SetKeys(s_rgTestKey, sizeof(s_rgTestKey));
 
             unsigned char rgBlock[k_cSpmBlockSizeBytes];
-            s_FillTestBlock(rgBlock);
+            CryptoPadLibTests::s_FillTestBlock(rgBlock);
 
             unsigned char rgOriginal[k_cSpmBlockSizeBytes];
             ::memcpy(rgOriginal, rgBlock, k_cSpmBlockSizeBytes);
@@ -70,7 +70,7 @@ namespace CryptoPadLibTests
             // Actually, we can test via full roundtrip at the pass level
             // s_SmForwardPass should change the data
             cipher.Encrypt(rgBlock, k_cSpmBlockSizeBytes);
-            bool fChanged = (memcmp(rgBlock, rgOriginal, k_cSpmBlockSizeBytes) != 0);
+            bool fChanged = (::memcmp(rgBlock, rgOriginal, k_cSpmBlockSizeBytes) != 0);
             Assert::IsTrue(fChanged, L"Encrypt (which calls s_SmForwardPass) should modify data");
         }
 
@@ -82,13 +82,13 @@ namespace CryptoPadLibTests
             cipher2.SetKeys(s_rgTestKey, sizeof(s_rgTestKey));
 
             unsigned char rgBlock1[k_cSpmBlockSizeBytes], rgBlock2[k_cSpmBlockSizeBytes];
-            s_FillTestBlock(rgBlock1);
-            s_FillTestBlock(rgBlock2);
+            CryptoPadLibTests::s_FillTestBlock(rgBlock1);
+            CryptoPadLibTests::s_FillTestBlock(rgBlock2);
 
             cipher1.Encrypt(rgBlock1, k_cSpmBlockSizeBytes);
             cipher2.Encrypt(rgBlock2, k_cSpmBlockSizeBytes);
 
-            bool fEqual = (memcmp(rgBlock1, rgBlock2, k_cSpmBlockSizeBytes) == 0);
+            bool fEqual = (::memcmp(rgBlock1, rgBlock2, k_cSpmBlockSizeBytes) == 0);
             Assert::IsTrue(fEqual, L"Same key should produce identical ciphertext");
         }
 
@@ -103,7 +103,7 @@ namespace CryptoPadLibTests
             unsigned char rgPermutation[k_cSpmBlockSizeBytes];
             unsigned char rgOriginal[k_cSpmBlockSizeBytes];
 
-            s_FillTestBlock(rgBlock);
+            CryptoPadLibTests::s_FillTestBlock(rgBlock);
             ::memcpy(rgOriginal, rgBlock, k_cSpmBlockSizeBytes);
 
             // Create a simple rotation permutation: each byte moves one position forward
@@ -115,7 +115,7 @@ namespace CryptoPadLibTests
             CSpmBlockCipher64::s_ApplyPermutation(rgBlock, rgPermutation, rgBuffer);
 
             // Verify that bytes were moved
-            bool fChanged = (memcmp(rgBlock, rgOriginal, k_cSpmBlockSizeBytes) != 0);
+            bool fChanged = (::memcmp(rgBlock, rgOriginal, k_cSpmBlockSizeBytes) != 0);
             Assert::IsTrue(fChanged, L"Permutation should rearrange bytes");
 
             // Verify specific byte: original[0] should now be at position permutation[0]=1
@@ -130,7 +130,7 @@ namespace CryptoPadLibTests
             unsigned char rgReversePermutation[k_cSpmBlockSizeBytes];
             unsigned char rgOriginal[k_cSpmBlockSizeBytes];
 
-            s_FillTestBlock(rgBlock);
+            CryptoPadLibTests::s_FillTestBlock(rgBlock);
             ::memcpy(rgOriginal, rgBlock, k_cSpmBlockSizeBytes);
 
             // Create a rotation permutation
@@ -148,7 +148,7 @@ namespace CryptoPadLibTests
             CSpmBlockCipher64::s_ApplyPermutation(rgBlock, rgPermutation, rgBuffer);
             CSpmBlockCipher64::s_ApplyPermutation(rgBlock, rgReversePermutation, rgBuffer);
 
-            bool fEqual = (memcmp(rgBlock, rgOriginal, k_cSpmBlockSizeBytes) == 0);
+            bool fEqual = (::memcmp(rgBlock, rgOriginal, k_cSpmBlockSizeBytes) == 0);
             Assert::IsTrue(fEqual, L"Applying permutation then reverse permutation should restore original data");
         }
 
@@ -159,7 +159,7 @@ namespace CryptoPadLibTests
             unsigned char rgIdentity[k_cSpmBlockSizeBytes];
             unsigned char rgOriginal[k_cSpmBlockSizeBytes];
 
-            s_FillTestBlock(rgBlock);
+            CryptoPadLibTests::s_FillTestBlock(rgBlock);
             ::memcpy(rgOriginal, rgBlock, k_cSpmBlockSizeBytes);
 
             // Identity permutation: each byte stays in place
@@ -170,7 +170,7 @@ namespace CryptoPadLibTests
 
             CSpmBlockCipher64::s_ApplyPermutation(rgBlock, rgIdentity, rgBuffer);
 
-            bool fEqual = (memcmp(rgBlock, rgOriginal, k_cSpmBlockSizeBytes) == 0);
+            bool fEqual = (::memcmp(rgBlock, rgOriginal, k_cSpmBlockSizeBytes) == 0);
             Assert::IsTrue(fEqual, L"Identity permutation should not change data");
         }
 
@@ -230,18 +230,18 @@ namespace CryptoPadLibTests
 
             unsigned char rgBlock[k_cSpmBlockSizeBytes];
             unsigned char rgOriginal[k_cSpmBlockSizeBytes];
-            s_FillTestBlock(rgBlock);
+            CryptoPadLibTests::s_FillTestBlock(rgBlock);
             ::memcpy(rgOriginal, rgBlock, k_cSpmBlockSizeBytes);
 
             cipherEnc.Encrypt(rgBlock, k_cSpmBlockSizeBytes);
 
             // Verify ciphertext differs from plaintext
-            bool fChanged = (memcmp(rgBlock, rgOriginal, k_cSpmBlockSizeBytes) != 0);
+            bool fChanged = (::memcmp(rgBlock, rgOriginal, k_cSpmBlockSizeBytes) != 0);
             Assert::IsTrue(fChanged, L"Encryption should modify data");
 
             cipherDec.Decrypt(rgBlock, k_cSpmBlockSizeBytes);
 
-            bool fEqual = (memcmp(rgBlock, rgOriginal, k_cSpmBlockSizeBytes) == 0);
+            bool fEqual = (::memcmp(rgBlock, rgOriginal, k_cSpmBlockSizeBytes) == 0);
             Assert::IsTrue(fEqual, L"Decrypt should restore original plaintext (NoPermutation mode)");
 
             // Restore Permutation mode for other tests
@@ -257,17 +257,17 @@ namespace CryptoPadLibTests
 
             unsigned char rgBlock[k_cSpmBlockSizeBytes];
             unsigned char rgOriginal[k_cSpmBlockSizeBytes];
-            s_FillTestBlock(rgBlock);
+            CryptoPadLibTests::s_FillTestBlock(rgBlock);
             ::memcpy(rgOriginal, rgBlock, k_cSpmBlockSizeBytes);
 
             cipherEnc.Encrypt(rgBlock, k_cSpmBlockSizeBytes);
 
-            bool fChanged = (memcmp(rgBlock, rgOriginal, k_cSpmBlockSizeBytes) != 0);
+            bool fChanged = (::memcmp(rgBlock, rgOriginal, k_cSpmBlockSizeBytes) != 0);
             Assert::IsTrue(fChanged, L"Encryption should modify data");
 
             cipherDec.Decrypt(rgBlock, k_cSpmBlockSizeBytes);
 
-            bool fEqual = (memcmp(rgBlock, rgOriginal, k_cSpmBlockSizeBytes) == 0);
+            bool fEqual = (::memcmp(rgBlock, rgOriginal, k_cSpmBlockSizeBytes) == 0);
             Assert::IsTrue(fEqual, L"Decrypt should restore original plaintext (Permutation mode)");
         }
 
@@ -290,12 +290,12 @@ namespace CryptoPadLibTests
 
             cipherEnc.Encrypt(rgData, cbData);
 
-            bool fChanged = (memcmp(rgData, rgOriginal, cbData) != 0);
+            bool fChanged = (::memcmp(rgData, rgOriginal, cbData) != 0);
             Assert::IsTrue(fChanged, L"Multi-block encryption should modify data");
 
             cipherDec.Decrypt(rgData, cbData);
 
-            bool fEqual = (memcmp(rgData, rgOriginal, cbData) == 0);
+            bool fEqual = (::memcmp(rgData, rgOriginal, cbData) == 0);
             Assert::IsTrue(fEqual, L"Multi-block decrypt should restore original data");
         }
 
@@ -315,7 +315,7 @@ namespace CryptoPadLibTests
             // Test via full encrypt/decrypt at block level which exercises s_EncryptRound/s_DecryptRound.
             unsigned char rgBlock[k_cSpmBlockSizeBytes];
             unsigned char rgOriginal[k_cSpmBlockSizeBytes];
-            s_FillTestBlock(rgBlock);
+            CryptoPadLibTests::s_FillTestBlock(rgBlock);
             ::memcpy(rgOriginal, rgBlock, k_cSpmBlockSizeBytes);
 
             // Single block roundtrip exercises s_EncryptRound (3x) and s_DecryptRound (3x)
@@ -325,7 +325,7 @@ namespace CryptoPadLibTests
             cipher.Encrypt(rgBlock, k_cSpmBlockSizeBytes);
             cipherDec.Decrypt(rgBlock, k_cSpmBlockSizeBytes);
 
-            bool fEqual = (memcmp(rgBlock, rgOriginal, k_cSpmBlockSizeBytes) == 0);
+            bool fEqual = (::memcmp(rgBlock, rgOriginal, k_cSpmBlockSizeBytes) == 0);
             Assert::IsTrue(fEqual, L"EncryptRound/DecryptRound roundtrip should restore data (NoPermutation)");
 
             CSpmBlockCipher64::s_ConstructCodebook(CSpmBlockCipher64::BLOCK_MODE::Permutation);
@@ -347,13 +347,13 @@ namespace CryptoPadLibTests
             cipher2.SetKeys(rgAltKey, sizeof(rgAltKey));
 
             unsigned char rgBlock1[k_cSpmBlockSizeBytes], rgBlock2[k_cSpmBlockSizeBytes];
-            s_FillTestBlock(rgBlock1);
-            s_FillTestBlock(rgBlock2);
+            CryptoPadLibTests::s_FillTestBlock(rgBlock1);
+            CryptoPadLibTests::s_FillTestBlock(rgBlock2);
 
             cipher1.Encrypt(rgBlock1, k_cSpmBlockSizeBytes);
             cipher2.Encrypt(rgBlock2, k_cSpmBlockSizeBytes);
 
-            bool fDifferent = (memcmp(rgBlock1, rgBlock2, k_cSpmBlockSizeBytes) != 0);
+            bool fDifferent = (::memcmp(rgBlock1, rgBlock2, k_cSpmBlockSizeBytes) != 0);
             Assert::IsTrue(fDifferent, L"Different keys should produce different ciphertext");
         }
 
@@ -372,12 +372,12 @@ namespace CryptoPadLibTests
 
             cipherEnc.Encrypt(rgBlock, k_cSpmBlockSizeBytes);
 
-            bool fChanged = (memcmp(rgBlock, rgOriginal, k_cSpmBlockSizeBytes) != 0);
+            bool fChanged = (::memcmp(rgBlock, rgOriginal, k_cSpmBlockSizeBytes) != 0);
             Assert::IsTrue(fChanged, L"Encrypting zeros should produce non-zero ciphertext");
 
             cipherDec.Decrypt(rgBlock, k_cSpmBlockSizeBytes);
 
-            bool fEqual = (memcmp(rgBlock, rgOriginal, k_cSpmBlockSizeBytes) == 0);
+            bool fEqual = (::memcmp(rgBlock, rgOriginal, k_cSpmBlockSizeBytes) == 0);
             Assert::IsTrue(fEqual, L"Decrypting should restore zero block");
         }
 
@@ -395,7 +395,7 @@ namespace CryptoPadLibTests
             cipherEnc.Encrypt(rgBlock, k_cSpmBlockSizeBytes);
             cipherDec.Decrypt(rgBlock, k_cSpmBlockSizeBytes);
 
-            bool fEqual = (memcmp(rgBlock, rgOriginal, k_cSpmBlockSizeBytes) == 0);
+            bool fEqual = (::memcmp(rgBlock, rgOriginal, k_cSpmBlockSizeBytes) == 0);
             Assert::IsTrue(fEqual, L"Decrypting should restore all-ones block");
         }
 
@@ -420,7 +420,7 @@ namespace CryptoPadLibTests
                 cipher.SetKeys(s_rgTestKey, sizeof(s_rgTestKey));
                 cipher.Encrypt(rgBlock, k_cSpmBlockSizeBytes);
 
-                bool fChanged = (memcmp(rgBlock, rgOriginal, k_cSpmBlockSizeBytes) != 0);
+                bool fChanged = (::memcmp(rgBlock, rgOriginal, k_cSpmBlockSizeBytes) != 0);
                 Assert::IsTrue(fChanged, L"Encryption should modify data for any input");
             }
         }
@@ -461,7 +461,7 @@ namespace CryptoPadLibTests
             unsigned char rgBuffer[k_cSpmBlockSizeBytes] = { 0 };
             unsigned char rgPermutation[k_cSpmBlockSizeBytes];
 
-            s_FillTestBlock(rgBlock);
+            CryptoPadLibTests::s_FillTestBlock(rgBlock);
 
             // Create a reversal permutation
             for (size_t i = 0; i < k_cSpmBlockSizeBytes; ++i)
@@ -493,7 +493,7 @@ namespace CryptoPadLibTests
         {
             unsigned char rgBlock[k_cSpmBlockSizeBytes];
             unsigned char rgOriginal[k_cSpmBlockSizeBytes];
-            s_FillTestBlock(rgBlock);
+            CryptoPadLibTests::s_FillTestBlock(rgBlock);
             ::memcpy(rgOriginal, rgBlock, k_cSpmBlockSizeBytes);
 
             CSpmBlockCipher64 cipherEnc;
@@ -509,7 +509,7 @@ namespace CryptoPadLibTests
             cipherDec.SetKeys(rgWrongKey, sizeof(rgWrongKey));
             cipherDec.Decrypt(rgBlock, k_cSpmBlockSizeBytes);
 
-            bool fEqual = (memcmp(rgBlock, rgOriginal, k_cSpmBlockSizeBytes) == 0);
+            bool fEqual = (::memcmp(rgBlock, rgOriginal, k_cSpmBlockSizeBytes) == 0);
             Assert::IsFalse(fEqual, L"Decrypting with wrong key should not restore plaintext");
         }
     };

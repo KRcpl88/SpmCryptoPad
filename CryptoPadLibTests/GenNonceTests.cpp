@@ -18,7 +18,7 @@ namespace CryptoPadLibTests
         {
             BYTE rgNonce[k_cSpmBlockSizeBytes] = { 0 };
 
-            GenNonce(rgNonce);
+            ::GenNonce(rgNonce);
 
             bool fAllZero = true;
             for (size_t i = 0; i < k_cSpmBlockSizeBytes; i++)
@@ -37,10 +37,10 @@ namespace CryptoPadLibTests
             BYTE rgNonce1[k_cSpmBlockSizeBytes] = { 0 };
             BYTE rgNonce2[k_cSpmBlockSizeBytes] = { 0 };
 
-            GenNonce(rgNonce1);
-            GenNonce(rgNonce2);
+            ::GenNonce(rgNonce1);
+            ::GenNonce(rgNonce2);
 
-            bool fNoncesAreEqual = (memcmp(rgNonce1, rgNonce2, k_cSpmBlockSizeBytes) == 0);
+            bool fNoncesAreEqual = (::memcmp(rgNonce1, rgNonce2, k_cSpmBlockSizeBytes) == 0);
             Assert::IsFalse(fNoncesAreEqual, L"Two consecutive calls to GenNonce should produce different results");
         }
 
@@ -49,7 +49,7 @@ namespace CryptoPadLibTests
             BYTE rgNonce[k_cSpmBlockSizeBytes] = { 0 };
             char rgCustomKey[] = "1234567890ABCDEF1234567890ABCDEF1234567890ABCDEF1234567890ABCDEF";
 
-            GenNonce(rgNonce, rgCustomKey);
+            ::GenNonce(rgNonce, rgCustomKey);
 
             bool fAllZero = true;
             for (size_t i = 0; i < k_cSpmBlockSizeBytes; i++)
@@ -69,10 +69,10 @@ namespace CryptoPadLibTests
             BYTE rgNonce2[k_cSpmBlockSizeBytes] = { 0 };
             char rgCustomKey[] = "1234567890ABCDEF1234567890ABCDEF1234567890ABCDEF1234567890ABCDEF";
 
-            GenNonce(rgNonce1);
-            GenNonce(rgNonce2, rgCustomKey);
+            ::GenNonce(rgNonce1);
+            ::GenNonce(rgNonce2, rgCustomKey);
 
-            bool fNoncesAreEqual = (memcmp(rgNonce1, rgNonce2, k_cSpmBlockSizeBytes) == 0);
+            bool fNoncesAreEqual = (::memcmp(rgNonce1, rgNonce2, k_cSpmBlockSizeBytes) == 0);
             Assert::IsFalse(fNoncesAreEqual, L"GenNonce with default and custom hash key should produce different results");
         }
 
