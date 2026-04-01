@@ -158,6 +158,7 @@
   <ItemGroup>
     <ClCompile Include="GenNonceTests.cpp" />
     <ClCompile Include="CipherTests.cpp" />
+    <ClCompile Include="ParsePasswordTests.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CryptoPadLib\CryptoPadLib.vcxproj">

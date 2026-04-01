@@ -117,3 +117,39 @@ void GenNonce(__inout_bcount(k_cSpmBlockSizeBytes) BYTE* pNonce, __inout_z char*
     delete pFbcOneWayHash;
     delete[] pBuf;
 }
+
+void ParsePassword(__in_z LPCWSTR pszPassword, __in size_t cbBin, __out_bcount(cbBin) unsigned char** ppBin)
+{
+    size_t i = 0;
+    bool fFirstPass = true;
+    bool fPasswordIncomplete = true;
+    LPCWSTR pszTemp = nullptr;
+
+    *ppBin = new unsigned char[cbBin];
+    ::memset(*ppBin, 0, cbBin);
+
+    pszTemp = pszPassword;
+
+    while (fFirstPass || ((*pszTemp) && fPasswordIncomplete))
+    {
+        if ((*pszTemp) == 0)
+        {
+            pszTemp = pszPassword;
+        }
+
+        *(reinterpret_cast<WCHAR*>(*ppBin + i)) += *pszTemp;
+        ++pszTemp;
+
+        if ((*pszTemp) == 0)
+        {
+            fPasswordIncomplete = false;
+        }
+
+        i += sizeof(*pszTemp);
+        if (i >= cbBin)
+        {
+            fFirstPass = false;
+            i = 0;
+        }
+    }
+}
