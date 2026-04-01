@@ -33,7 +33,7 @@ unsigned long atoh(__in_z const char* pszText)
 
 void HexToBin(__inout_z char* pszHex, __in size_t cchBin, __out_ecount(cchBin) unsigned char* pBin)
 {
-    char* pszTemp;
+    char* pszTemp = nullptr;
     size_t i = cchBin - 1;
 
     // start at the end
@@ -73,7 +73,7 @@ void HexToBin(__inout_z char* pszHex, __in size_t nAlign, __out size_t* pcchBin,
 void GenNonce(__inout_bcount(k_cSpmBlockSizeBytes) BYTE* pNonce, __inout_z char* pszHashKey)
 {
     char szDefaultHashKey[65] = "3BCC8CBF2103DDC295E70BCC305C6BB232479DD2792204A2CA83CE3BEFF9EA43";
-    BYTE rgHashKey[4 * sizeof(SPM_WORD)];
+    BYTE rgHashKey[4 * sizeof(SPM_WORD)] = { 0 };
     FBC_CRYPT* pFbcOneWayHash = new FBC_CRYPT();
     BYTE* pBuf = new BYTE[k_cSpmBlockSizeBytes];
     FILETIME ft = { 0 };

@@ -98,6 +98,17 @@ Debug-only assertions use a custom `ASSERT` macro (defined in `framework.h`) tha
 - Angle brackets for system headers: `#include <windows.h>`
 - Precompiled headers are **not used**
 
+### Variable initialization
+
+All local variables must be initialized at the point of declaration:
+
+- **Fixed-size arrays**: initialize with `= { 0 }` or with explicit data (e.g., `unsigned char rgBuf[128] = { 0 };`).
+- **Class/struct objects**: rely on the constructor to initialize all data members. Every class must have a constructor that initializes all data members, either via an initializer list or assignments in the constructor body.
+- **Pointers**: initialize with `new`/`new[]` or `nullptr` / `NULL` (e.g., `LPWSTR pszText = nullptr;`).
+- **Integer types** (`int`, `size_t`, `DWORD`, etc.): initialize to `0` (e.g., `size_t i = 0;`).
+- **Boolean types**: initialize to `false` (e.g., `bool fOK = false;`).
+- **Enum types**: may be initialized to `0` or a named enumerator (e.g., `BLOCK_MODE eMode = NoPermutation;`).
+
 ### CI
 
 - **build.yml** — Builds solution and runs tests on every push/PR (Release x64)

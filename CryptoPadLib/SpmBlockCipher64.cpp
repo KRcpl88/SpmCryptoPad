@@ -25,7 +25,7 @@ unsigned char* CSpmBlockCipher64::s_prgPermutationCodebook;
 
 void CSpmBlockCipher64::s_ConstructCodebook(CSpmBlockCipher64::BLOCK_MODE eBlockMode)
 {
-    size_t i;
+    size_t i = 0;
     // initialize Sbox values to 0, 1, 2, ... N
     for (i = 0; ARRAYSIZE(s_rgCodebook) > i; ++i)
     {
@@ -60,8 +60,8 @@ void CSpmBlockCipher64::s_ConstructCodebook(CSpmBlockCipher64::BLOCK_MODE eBlock
 
 void CSpmBlockCipher64::s_CheckCodebook()
 {
-    size_t i;
-    UCHAR rgCount[SPM_SBOX_WIDTH];
+    size_t i = 0;
+    UCHAR rgCount[SPM_SBOX_WIDTH] = { 0 };
 
     ::memset(rgCount, 0, sizeof(rgCount));
 
@@ -89,11 +89,11 @@ void CSpmBlockCipher64::s_CheckCodebook()
 
 void CSpmBlockCipher64::s_PermuteCodebook(int n, __in_ecount(cKeyData) const unsigned char* pKeyData, size_t cKeyData)
 {
-    SPM_SBOX_WORD nRand;
-    SPM_SBOX_WORD nTemp;
+    SPM_SBOX_WORD nRand = 0;
+    SPM_SBOX_WORD nTemp = 0;
     SPM_PRNG prngPermutor;
-    size_t j;
-    int i;
+    size_t j = 0;
+    int i = 0;
 
     prngPermutor.SetKeys(pKeyData, cKeyData);
 
@@ -152,8 +152,8 @@ void CSpmBlockCipher64::InitSbox()
 
 void CSpmBlockCipher64::PermuteSbox()
 {
-    SPM_SBOX_WORD nRand;
-    SPM_SBOX_WORD nTemp;
+    SPM_SBOX_WORD nRand = 0;
+    SPM_SBOX_WORD nTemp = 0;
     size_t i=0;
 
     size_t j=0;
@@ -181,8 +181,8 @@ void CSpmBlockCipher64::PermuteSbox()
 
 #ifdef _DEBUG
     // validate SBoxes
-    UCHAR rgCount[SPM_SBOX_WIDTH];
-    UCHAR rgReverseCount[SPM_SBOX_WIDTH];
+    UCHAR rgCount[SPM_SBOX_WIDTH] = { 0 };
+    UCHAR rgReverseCount[SPM_SBOX_WIDTH] = { 0 };
 
     ::memset(rgCount, 0, sizeof(rgCount));
     ::memset(rgReverseCount, 0, sizeof(rgReverseCount));
@@ -220,7 +220,7 @@ void CSpmBlockCipher64::PermuteSbox()
 
 #ifdef _DEBUG
     // validate SBoxes
-    UCHAR rgBlockPermutationCount[ARRAYSIZE(m_rgBlockPermutation)];
+    UCHAR rgBlockPermutationCount[ARRAYSIZE(m_rgBlockPermutation)] = { 0 };
 
     ::memset(rgBlockPermutationCount, 0, sizeof(rgBlockPermutationCount));
 
@@ -235,9 +235,9 @@ void CSpmBlockCipher64::PermuteSbox()
 
 void CSpmBlockCipher64::ShuffleBlockPermutation(__out_ecount(k_cSpmBlockSizeBytes) unsigned char* rgBlockPermutation)
 {
-    size_t i;
-    SPM_SBOX_WORD nTemp;
-    SPM_SBOX_WORD nRand;
+    size_t i = 0;
+    SPM_SBOX_WORD nTemp = 0;
+    SPM_SBOX_WORD nRand = 0;
 
     ::memcpy(rgBlockPermutation, m_rgBlockPermutation, k_cSpmBlockSizeBytes);
     for (i = 0; k_cSpmBlockSizeBytes > i; ++i)
@@ -254,7 +254,7 @@ void CSpmBlockCipher64::ShuffleBlockPermutation(__out_ecount(k_cSpmBlockSizeByte
 
 void CSpmBlockCipher64::ReverseBlockPermutation(__in_ecount(k_cSpmBlockSizeBytes) const unsigned char* rgBlockPermutation, __out_ecount(k_cSpmBlockSizeBytes) unsigned char* rgReverseBlockPermutation)
 {
-    size_t i;
+    size_t i = 0;
     for (i = 0; k_cSpmBlockSizeBytes > i; ++i)
     {
         // if m_rgBlockPermutation[x] == y, m_rgReverseBlockPermutation[y] == x, so m_rgReverseBlockPermutation[m_rgBlockPermutation[x]] = x
@@ -267,7 +267,7 @@ void CSpmBlockCipher64::ReverseBlockPermutation(__in_ecount(k_cSpmBlockSizeBytes
 
 bool CSpmBlockCipher64::s_ValidKey(__in_bcount(cbKeyData) const unsigned char * pKeyData, size_t cbKeyData)
 {
-    size_t cKeyWidth;
+    size_t cKeyWidth = 0;
     cKeyWidth = s_GetKeyWidth();
     return (pKeyData != NULL) && (cbKeyData == cKeyWidth);
 }
@@ -294,7 +294,7 @@ void CSpmBlockCipher64::s_SmForwardPass(
     __inout SPM_PRNG* pPrngMask,
     __in_ecount(SPM_SBOX_WIDTH) const SPM_SBOX_WORD* prgSbox)
 {
-    SPM_SBOX_WORD nMask;
+    SPM_SBOX_WORD nMask = 0;
     for (size_t k = 0; k < k_cSpmBlockInflectionIndex; ++k)
     {
         nMask = pPrngMask->Rand();
@@ -311,7 +311,7 @@ void CSpmBlockCipher64::s_SmReversePass(
     // make sure size_t is unsigned so wrap-around terminates the loop
     C_ASSERT((((size_t)0) - 1) > 0);
 
-    SPM_SBOX_WORD nMask;
+    SPM_SBOX_WORD nMask = 0;
     for (size_t k = k_cSpmBlockInflectionIndex - 2; k < k_cSpmBlockInflectionIndex; --k)
     {
         nMask = pPrngMask->Rand();

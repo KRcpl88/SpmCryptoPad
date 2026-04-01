@@ -45,7 +45,7 @@ public:
 
     static size_t s_GetKeyWidth()
     {
-      size_t cKeyWidth;
+      size_t cKeyWidth = 0;
       cKeyWidth = 2 * sizeof(SPM_WORD);
       return cKeyWidth;
     }
@@ -66,6 +66,7 @@ public:
     CSpmBlockCipher64()
     {
         ::memset(m_rgSbox, 0, sizeof(m_rgSbox));
+        ::memset(m_rgReverseSbox, 0, sizeof(m_rgReverseSbox));
         ::memset(m_rgBlockPermutation, 0, sizeof(m_rgBlockPermutation));
     }
 
@@ -95,7 +96,7 @@ public:
 
     static size_t s_GetKeyWidth()
     {
-        size_t cKeyWidth;
+        size_t cKeyWidth = 0;
         cKeyWidth = SPM_PRNG::s_GetKeyWidth() *2;
         return cKeyWidth;
     }
