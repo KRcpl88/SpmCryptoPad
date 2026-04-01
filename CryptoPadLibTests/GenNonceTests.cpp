@@ -7,7 +7,20 @@ namespace CryptoPadLibTests
 {
     TEST_MODULE_INITIALIZE(ModuleInitialize)
     {
+        size_t cKey = 0;
+        unsigned char* pKey = NULL;
+        char rgKey[] = "b6a4c072764a2233db9c23b0bc79c143";
+
+        HexToBin(rgKey, 1, &cKey, &pKey);
+
         FBC_CRYPT::s_ConstructCodebook(CSpmBlockCipher64::BLOCK_MODE::Permutation);
+
+        FBC_CRYPT::s_PermuteCodebook(16, pKey, cKey);
+        delete[] pKey;
+
+#ifdef _DEBUG
+        FBC_CRYPT::s_CheckCodebook();
+#endif
     }
 
 	TEST_CLASS(GenNonceTests)
