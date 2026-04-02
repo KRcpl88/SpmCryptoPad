@@ -6,14 +6,20 @@ using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
 namespace CryptoPadLibTests
 {
-    // Helper: set up a cipher instance with the password-derived key
-    static void InitCipher(CSpmBlockCipher64& cipher)
+    // Helper: set up a cipher instance with a password-derived key
+    static void InitCipherWithPassword(CSpmBlockCipher64& cipher, const wchar_t* pszPassword)
     {
         size_t cbKey = CSpmBlockCipher64::s_GetKeyWidth();
         unsigned char* pKey = nullptr;
-        ParsePassword(L"P@s$w0rd!", cbKey, &pKey);
+        ParsePassword(pszPassword, cbKey, &pKey);
         cipher.SetKeys(pKey, cbKey);
         delete[] pKey;
+    }
+
+    // Helper: set up a cipher instance with the password-derived key
+    static void InitCipher(CSpmBlockCipher64& cipher)
+    {
+        CryptoPadLibTests::InitCipherWithPassword(cipher, L"P@s$w0rd!");
     }
 
     // Helper: fill a block with a known pattern
@@ -23,6 +29,16 @@ namespace CryptoPadLibTests
         {
             pBlock[i] = static_cast<unsigned char>(i & 0xFF);
         }
+    }
+
+    // Helper: seed a PRNG with the password-derived key
+    static void InitPrng(CSimplePrng64& prng)
+    {
+        size_t cbKey = CSimplePrng64::s_GetKeyWidth();
+        unsigned char* pKey = nullptr;
+        ParsePassword(L"P@s$w0rd!", cbKey, &pKey);
+        prng.SetKeys(pKey, cbKey);
+        delete[] pKey;
     }
 
     TEST_CLASS(CipherStaticMethodTests)
@@ -157,15 +173,8 @@ namespace CryptoPadLibTests
         TEST_METHOD(TestFillDecryptMasksMatchesPrng)
         {
             CSimplePrng64 prngMask1, prngMask2;
-            size_t cbPrngKey = CSimplePrng64::s_GetKeyWidth();
-            unsigned char* pKey1 = nullptr;
-            unsigned char* pKey2 = nullptr;
-            ParsePassword(L"P@s$w0rd!", cbPrngKey, &pKey1);
-            ParsePassword(L"P@s$w0rd!", cbPrngKey, &pKey2);
-            prngMask1.SetKeys(pKey1, cbPrngKey);
-            prngMask2.SetKeys(pKey2, cbPrngKey);
-            delete[] pKey1;
-            delete[] pKey2;
+            CryptoPadLibTests::InitPrng(prngMask1);
+            CryptoPadLibTests::InitPrng(prngMask2);
 
             const size_t cMasks = 6 * k_cSpmBlockInflectionIndex - 3;
             SPM_SBOX_WORD rgMask[6 * k_cSpmBlockInflectionIndex - 3] = { 0 };
@@ -183,11 +192,7 @@ namespace CryptoPadLibTests
         TEST_METHOD(TestFillDecryptMasksCorrectCount)
         {
             CSimplePrng64 prngMask;
-            size_t cbPrngKey = CSimplePrng64::s_GetKeyWidth();
-            unsigned char* pKey = nullptr;
-            ParsePassword(L"P@s$w0rd!", cbPrngKey, &pKey);
-            prngMask.SetKeys(pKey, cbPrngKey);
-            delete[] pKey;
+            CryptoPadLibTests::InitPrng(prngMask);
 
             const size_t cMasks = 6 * k_cSpmBlockInflectionIndex - 3;
             SPM_SBOX_WORD rgMask[6 * k_cSpmBlockInflectionIndex - 3] = { 0 };
@@ -261,12 +266,7 @@ namespace CryptoPadLibTests
         {
             CSpmBlockCipher64 cipher1, cipher2;
             CryptoPadLibTests::InitCipher(cipher1);
-
-            size_t cbKey = CSpmBlockCipher64::s_GetKeyWidth();
-            unsigned char* pAltKey = nullptr;
-            ParsePassword(L"Different!", cbKey, &pAltKey);
-            cipher2.SetKeys(pAltKey, cbKey);
-            delete[] pAltKey;
+            CryptoPadLibTests::InitCipherWithPassword(cipher2, L"Different!");
 
             unsigned char rgBlock1[k_cSpmBlockSizeBytes] = { 0 };
             unsigned char rgBlock2[k_cSpmBlockSizeBytes] = { 0 };
@@ -355,11 +355,7 @@ namespace CryptoPadLibTests
         TEST_METHOD(TestFillDecryptMasksNonZero)
         {
             CSimplePrng64 prngMask;
-            size_t cbPrngKey = CSimplePrng64::s_GetKeyWidth();
-            unsigned char* pKey = nullptr;
-            ParsePassword(L"P@s$w0rd!", cbPrngKey, &pKey);
-            prngMask.SetKeys(pKey, cbPrngKey);
-            delete[] pKey;
+            CryptoPadLibTests::InitPrng(prngMask);
 
             SPM_SBOX_WORD rgMask[6 * k_cSpmBlockInflectionIndex - 3] = { 0 };
             CSpmBlockCipher64::s_FillDecryptMasks(rgMask, &prngMask);
@@ -428,11 +424,7 @@ namespace CryptoPadLibTests
 
             // Decrypt with a different key
             CSpmBlockCipher64 cipherDec;
-            size_t cbKey = CSpmBlockCipher64::s_GetKeyWidth();
-            unsigned char* pWrongKey = nullptr;
-            ParsePassword(L"Different!", cbKey, &pWrongKey);
-            cipherDec.SetKeys(pWrongKey, cbKey);
-            delete[] pWrongKey;
+            CryptoPadLibTests::InitCipherWithPassword(cipherDec, L"Different!");
             cipherDec.Decrypt(rgBlock, k_cSpmBlockSizeBytes);
 
             bool fEqual = (::memcmp(rgBlock, rgOriginal, k_cSpmBlockSizeBytes) == 0);
