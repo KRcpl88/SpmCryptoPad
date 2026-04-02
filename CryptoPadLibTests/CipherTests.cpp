@@ -6,8 +6,10 @@ using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
 namespace CryptoPadLibTests
 {
-    // Helper: set up a cipher instance with a password-derived key (defaults to L"P@s$w0rd!")
-    static void InitCipher(CSpmBlockCipher64& cipher, const wchar_t* pszPassword = L"P@s$w0rd!")
+    static const wchar_t* const k_pszDefaultPassword = L"P@s$w0rd!";
+
+    // Helper: set up a cipher instance with a password-derived key (defaults to k_pszDefaultPassword)
+    static void InitCipher(CSpmBlockCipher64& cipher, __in_opt_z const wchar_t* pszPassword = k_pszDefaultPassword)
     {
         size_t cbKey = CSpmBlockCipher64::s_GetKeyWidth();
         unsigned char* pKey = nullptr;
@@ -30,7 +32,7 @@ namespace CryptoPadLibTests
     {
         size_t cbKey = CSimplePrng64::s_GetKeyWidth();
         unsigned char* pKey = nullptr;
-        ParsePassword(L"P@s$w0rd!", cbKey, &pKey);
+        ParsePassword(k_pszDefaultPassword, cbKey, &pKey);
         prng.SetKeys(pKey, cbKey);
         delete[] pKey;
     }
