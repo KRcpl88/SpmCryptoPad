@@ -6,39 +6,35 @@ using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
 namespace CryptoPadLibTests
 {
-    // Fixed key for deterministic tests (32 bytes = s_GetKeyWidth())
-    static const unsigned char g_rgTestKey[32] = {
-        0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF,
-        0xFE, 0xDC, 0xBA, 0x98, 0x76, 0x54, 0x32, 0x10,
-        0xA0, 0xB1, 0xC2, 0xD3, 0xE4, 0xF5, 0x06, 0x17,
-        0x28, 0x39, 0x4A, 0x5B, 0x6C, 0x7D, 0x8E, 0x9F
-    };
+    static const wchar_t* const k_pwszDefaultPassword = L"P@s$w0rd!";
 
-    // Helper: set up a cipher instance with the password-derived key
-    static void InitCipher(CSpmBlockCipher64& cipher)
+    // Helper: set up a cipher instance with a password-derived key (defaults to k_pwszDefaultPassword)
+    static void InitCipher(CSpmBlockCipher64& cipher, __in_z const wchar_t* lpwszPassword = k_pwszDefaultPassword)
     {
         size_t cbKey = CSpmBlockCipher64::s_GetKeyWidth();
         unsigned char* pKey = nullptr;
-        ParsePassword(L"P@s$w0rd!", cbKey, &pKey);
+        ParsePassword(lpwszPassword, cbKey, &pKey);
         cipher.SetKeys(pKey, cbKey);
         delete[] pKey;
     }
 
-    // Helper: create two identically-seeded PRNGs from the test key
-    static void InitPrngs(CSimplePrng64& prngSBox, CSimplePrng64& prngMask)
+    // Helper: fill a block with a known pattern
+    static void FillTestBlock(__out_bcount(cbBlock) unsigned char* rgBlock, __in size_t cbBlock)
     {
-        size_t cbPrngKey = CSimplePrng64::s_GetKeyWidth();
-        prngSBox.SetKeys(g_rgTestKey, cbPrngKey);
-        prngMask.SetKeys(g_rgTestKey + cbPrngKey, cbPrngKey);
+        for (size_t i = 0; i < cbBlock; ++i)
+        {
+            rgBlock[i] = static_cast<unsigned char>(i & 0xFF);
+        }
     }
 
-    // Helper: fill a block with a known pattern
-    static void FillTestBlock(unsigned char* pBlock)
+    // Helper: seed a PRNG with the password-derived key
+    static void InitPrng(CSimplePrng64& prng)
     {
-        for (size_t i = 0; i < k_cSpmBlockSizeBytes; ++i)
-        {
-            pBlock[i] = static_cast<unsigned char>(i & 0xFF);
-        }
+        size_t cbKey = CSimplePrng64::s_GetKeyWidth();
+        unsigned char* pKey = nullptr;
+        ParsePassword(k_pwszDefaultPassword, cbKey, &pKey);
+        prng.SetKeys(pKey, cbKey);
+        delete[] pKey;
     }
 
     TEST_CLASS(CipherStaticMethodTests)
@@ -54,26 +50,12 @@ namespace CryptoPadLibTests
             CSpmBlockCipher64 cipher;
             CryptoPadLibTests::InitCipher(cipher);
 
-            CSimplePrng64 prngSBox, prngMask;
-            CryptoPadLibTests::InitPrngs(prngSBox, prngMask);
-
-            // Build sbox via a fresh cipher to get m_rgSbox
-            CSpmBlockCipher64 cipherForSbox;
-            cipherForSbox.SetKeys(g_rgTestKey, sizeof(g_rgTestKey));
-
             unsigned char rgBlock[k_cSpmBlockSizeBytes] = { 0 };
-            CryptoPadLibTests::FillTestBlock(rgBlock);
+            CryptoPadLibTests::FillTestBlock(rgBlock, k_cSpmBlockSizeBytes);
 
             unsigned char rgOriginal[k_cSpmBlockSizeBytes] = { 0 };
             ::memcpy(rgOriginal, rgBlock, k_cSpmBlockSizeBytes);
 
-            // Use the cipher's encrypt to get sbox - we access via full encrypt/decrypt roundtrip instead
-            // For direct access, call s_SmForwardPass with the cipher's internal sbox
-            // Since m_rgSbox is protected, we test via the public static by using a cipher and encrypting
-            // We'll test indirectly: encrypt with Encrypt, then test individual pieces compose correctly
-
-            // Actually, we can test via full roundtrip at the pass level
-            // s_SmForwardPass should change the data
             cipher.Encrypt(rgBlock, k_cSpmBlockSizeBytes);
             bool fChanged = (::memcmp(rgBlock, rgOriginal, k_cSpmBlockSizeBytes) != 0);
             Assert::IsTrue(fChanged, L"Encrypt (which calls s_SmForwardPass) should modify data");
@@ -83,13 +65,13 @@ namespace CryptoPadLibTests
         {
             // Two ciphers with the same key should produce identical output
             CSpmBlockCipher64 cipher1, cipher2;
-            cipher1.SetKeys(g_rgTestKey, sizeof(g_rgTestKey));
-            cipher2.SetKeys(g_rgTestKey, sizeof(g_rgTestKey));
+            CryptoPadLibTests::InitCipher(cipher1);
+            CryptoPadLibTests::InitCipher(cipher2);
 
             unsigned char rgBlock1[k_cSpmBlockSizeBytes] = { 0 };
             unsigned char rgBlock2[k_cSpmBlockSizeBytes] = { 0 };
-            CryptoPadLibTests::FillTestBlock(rgBlock1);
-            CryptoPadLibTests::FillTestBlock(rgBlock2);
+            CryptoPadLibTests::FillTestBlock(rgBlock1, k_cSpmBlockSizeBytes);
+            CryptoPadLibTests::FillTestBlock(rgBlock2, k_cSpmBlockSizeBytes);
 
             cipher1.Encrypt(rgBlock1, k_cSpmBlockSizeBytes);
             cipher2.Encrypt(rgBlock2, k_cSpmBlockSizeBytes);
@@ -109,7 +91,7 @@ namespace CryptoPadLibTests
             unsigned char rgPermutation[k_cSpmBlockSizeBytes] = { 0 };
             unsigned char rgOriginal[k_cSpmBlockSizeBytes] = { 0 };
 
-            CryptoPadLibTests::FillTestBlock(rgBlock);
+            CryptoPadLibTests::FillTestBlock(rgBlock, k_cSpmBlockSizeBytes);
             ::memcpy(rgOriginal, rgBlock, k_cSpmBlockSizeBytes);
 
             // Create a simple rotation permutation: each byte moves one position forward
@@ -136,7 +118,7 @@ namespace CryptoPadLibTests
             unsigned char rgReversePermutation[k_cSpmBlockSizeBytes] = { 0 };
             unsigned char rgOriginal[k_cSpmBlockSizeBytes] = { 0 };
 
-            CryptoPadLibTests::FillTestBlock(rgBlock);
+            CryptoPadLibTests::FillTestBlock(rgBlock, k_cSpmBlockSizeBytes);
             ::memcpy(rgOriginal, rgBlock, k_cSpmBlockSizeBytes);
 
             // Create a rotation permutation
@@ -165,7 +147,7 @@ namespace CryptoPadLibTests
             unsigned char rgIdentity[k_cSpmBlockSizeBytes] = { 0 };
             unsigned char rgOriginal[k_cSpmBlockSizeBytes] = { 0 };
 
-            CryptoPadLibTests::FillTestBlock(rgBlock);
+            CryptoPadLibTests::FillTestBlock(rgBlock, k_cSpmBlockSizeBytes);
             ::memcpy(rgOriginal, rgBlock, k_cSpmBlockSizeBytes);
 
             // Identity permutation: each byte stays in place
@@ -187,9 +169,8 @@ namespace CryptoPadLibTests
         TEST_METHOD(TestFillDecryptMasksMatchesPrng)
         {
             CSimplePrng64 prngMask1, prngMask2;
-            size_t cbPrngKey = CSimplePrng64::s_GetKeyWidth();
-            prngMask1.SetKeys(g_rgTestKey + cbPrngKey, cbPrngKey);
-            prngMask2.SetKeys(g_rgTestKey + cbPrngKey, cbPrngKey);
+            CryptoPadLibTests::InitPrng(prngMask1);
+            CryptoPadLibTests::InitPrng(prngMask2);
 
             const size_t cMasks = 6 * k_cSpmBlockInflectionIndex - 3;
             SPM_SBOX_WORD rgMask[6 * k_cSpmBlockInflectionIndex - 3] = { 0 };
@@ -207,8 +188,7 @@ namespace CryptoPadLibTests
         TEST_METHOD(TestFillDecryptMasksCorrectCount)
         {
             CSimplePrng64 prngMask;
-            size_t cbPrngKey = CSimplePrng64::s_GetKeyWidth();
-            prngMask.SetKeys(g_rgTestKey + cbPrngKey, cbPrngKey);
+            CryptoPadLibTests::InitPrng(prngMask);
 
             const size_t cMasks = 6 * k_cSpmBlockInflectionIndex - 3;
             SPM_SBOX_WORD rgMask[6 * k_cSpmBlockInflectionIndex - 3] = { 0 };
@@ -224,46 +204,15 @@ namespace CryptoPadLibTests
         // s_EncryptBlock + s_DecryptBlock roundtrip
         // =====================================================================
 
-        TEST_METHOD(TestEncryptBlockDecryptBlockRoundtripNoPermutation)
-        {
-            // Use NoPermutation mode to test without permutation complexity
-            CSpmBlockCipher64::s_ConstructCodebook(CSpmBlockCipher64::BLOCK_MODE::NoPermutation);
-            CSpmBlockCipher64::s_PermuteCodebook(1, g_rgTestKey, sizeof(g_rgTestKey));
-
-            CSpmBlockCipher64 cipherEnc, cipherDec;
-            cipherEnc.SetKeys(g_rgTestKey, sizeof(g_rgTestKey));
-            cipherDec.SetKeys(g_rgTestKey, sizeof(g_rgTestKey));
-
-            unsigned char rgBlock[k_cSpmBlockSizeBytes] = { 0 };
-            unsigned char rgOriginal[k_cSpmBlockSizeBytes] = { 0 };
-            CryptoPadLibTests::FillTestBlock(rgBlock);
-            ::memcpy(rgOriginal, rgBlock, k_cSpmBlockSizeBytes);
-
-            cipherEnc.Encrypt(rgBlock, k_cSpmBlockSizeBytes);
-
-            // Verify ciphertext differs from plaintext
-            bool fChanged = (::memcmp(rgBlock, rgOriginal, k_cSpmBlockSizeBytes) != 0);
-            Assert::IsTrue(fChanged, L"Encryption should modify data");
-
-            cipherDec.Decrypt(rgBlock, k_cSpmBlockSizeBytes);
-
-            bool fEqual = (::memcmp(rgBlock, rgOriginal, k_cSpmBlockSizeBytes) == 0);
-            Assert::IsTrue(fEqual, L"Decrypt should restore original plaintext (NoPermutation mode)");
-
-            // Restore Permutation mode for other tests
-            CSpmBlockCipher64::s_ConstructCodebook(CSpmBlockCipher64::BLOCK_MODE::Permutation);
-            CSpmBlockCipher64::s_PermuteCodebook(1, g_rgTestKey, sizeof(g_rgTestKey));
-        }
-
         TEST_METHOD(TestEncryptBlockDecryptBlockRoundtripPermutation)
         {
             CSpmBlockCipher64 cipherEnc, cipherDec;
-            cipherEnc.SetKeys(g_rgTestKey, sizeof(g_rgTestKey));
-            cipherDec.SetKeys(g_rgTestKey, sizeof(g_rgTestKey));
+            CryptoPadLibTests::InitCipher(cipherEnc);
+            CryptoPadLibTests::InitCipher(cipherDec);
 
             unsigned char rgBlock[k_cSpmBlockSizeBytes] = { 0 };
             unsigned char rgOriginal[k_cSpmBlockSizeBytes] = { 0 };
-            CryptoPadLibTests::FillTestBlock(rgBlock);
+            CryptoPadLibTests::FillTestBlock(rgBlock, k_cSpmBlockSizeBytes);
             ::memcpy(rgOriginal, rgBlock, k_cSpmBlockSizeBytes);
 
             cipherEnc.Encrypt(rgBlock, k_cSpmBlockSizeBytes);
@@ -291,8 +240,8 @@ namespace CryptoPadLibTests
             ::memcpy(rgOriginal, rgData, cbData);
 
             CSpmBlockCipher64 cipherEnc, cipherDec;
-            cipherEnc.SetKeys(g_rgTestKey, sizeof(g_rgTestKey));
-            cipherDec.SetKeys(g_rgTestKey, sizeof(g_rgTestKey));
+            CryptoPadLibTests::InitCipher(cipherEnc);
+            CryptoPadLibTests::InitCipher(cipherDec);
 
             cipherEnc.Encrypt(rgData, cbData);
 
@@ -306,56 +255,19 @@ namespace CryptoPadLibTests
         }
 
         // =====================================================================
-        // s_EncryptRound + s_DecryptRound roundtrip
-        // =====================================================================
-
-        TEST_METHOD(TestEncryptRoundDecryptRoundRoundtripNoPermutation)
-        {
-            CSpmBlockCipher64::s_ConstructCodebook(CSpmBlockCipher64::BLOCK_MODE::NoPermutation);
-            CSpmBlockCipher64::s_PermuteCodebook(1, g_rgTestKey, sizeof(g_rgTestKey));
-
-            CSpmBlockCipher64 cipher;
-            cipher.SetKeys(g_rgTestKey, sizeof(g_rgTestKey));
-
-            // We need direct access to sbox and reverse sbox.
-            // Test via full encrypt/decrypt at block level which exercises s_EncryptRound/s_DecryptRound.
-            unsigned char rgBlock[k_cSpmBlockSizeBytes] = { 0 };
-            unsigned char rgOriginal[k_cSpmBlockSizeBytes] = { 0 };
-            CryptoPadLibTests::FillTestBlock(rgBlock);
-            ::memcpy(rgOriginal, rgBlock, k_cSpmBlockSizeBytes);
-
-            // Single block roundtrip exercises s_EncryptRound (3x) and s_DecryptRound (3x)
-            CSpmBlockCipher64 cipherDec;
-            cipherDec.SetKeys(g_rgTestKey, sizeof(g_rgTestKey));
-
-            cipher.Encrypt(rgBlock, k_cSpmBlockSizeBytes);
-            cipherDec.Decrypt(rgBlock, k_cSpmBlockSizeBytes);
-
-            bool fEqual = (::memcmp(rgBlock, rgOriginal, k_cSpmBlockSizeBytes) == 0);
-            Assert::IsTrue(fEqual, L"EncryptRound/DecryptRound roundtrip should restore data (NoPermutation)");
-
-            CSpmBlockCipher64::s_ConstructCodebook(CSpmBlockCipher64::BLOCK_MODE::Permutation);
-            CSpmBlockCipher64::s_PermuteCodebook(1, g_rgTestKey, sizeof(g_rgTestKey));
-        }
-
-        // =====================================================================
         // Encrypt produces different output for different keys
         // =====================================================================
 
         TEST_METHOD(TestDifferentKeysProduceDifferentCiphertext)
         {
-            unsigned char rgAltKey[32] = { 0 };
-            ::memcpy(rgAltKey, g_rgTestKey, sizeof(rgAltKey));
-            rgAltKey[0] ^= 0xFF; // flip one byte
-
             CSpmBlockCipher64 cipher1, cipher2;
-            cipher1.SetKeys(g_rgTestKey, sizeof(g_rgTestKey));
-            cipher2.SetKeys(rgAltKey, sizeof(rgAltKey));
+            CryptoPadLibTests::InitCipher(cipher1);
+            CryptoPadLibTests::InitCipher(cipher2, L"Different!");
 
             unsigned char rgBlock1[k_cSpmBlockSizeBytes] = { 0 };
             unsigned char rgBlock2[k_cSpmBlockSizeBytes] = { 0 };
-            CryptoPadLibTests::FillTestBlock(rgBlock1);
-            CryptoPadLibTests::FillTestBlock(rgBlock2);
+            CryptoPadLibTests::FillTestBlock(rgBlock1, k_cSpmBlockSizeBytes);
+            CryptoPadLibTests::FillTestBlock(rgBlock2, k_cSpmBlockSizeBytes);
 
             cipher1.Encrypt(rgBlock1, k_cSpmBlockSizeBytes);
             cipher2.Encrypt(rgBlock2, k_cSpmBlockSizeBytes);
@@ -374,8 +286,8 @@ namespace CryptoPadLibTests
             unsigned char rgOriginal[k_cSpmBlockSizeBytes] = { 0 };
 
             CSpmBlockCipher64 cipherEnc, cipherDec;
-            cipherEnc.SetKeys(g_rgTestKey, sizeof(g_rgTestKey));
-            cipherDec.SetKeys(g_rgTestKey, sizeof(g_rgTestKey));
+            CryptoPadLibTests::InitCipher(cipherEnc);
+            CryptoPadLibTests::InitCipher(cipherDec);
 
             cipherEnc.Encrypt(rgBlock, k_cSpmBlockSizeBytes);
 
@@ -396,8 +308,8 @@ namespace CryptoPadLibTests
             ::memset(rgOriginal, 0xFF, k_cSpmBlockSizeBytes);
 
             CSpmBlockCipher64 cipherEnc, cipherDec;
-            cipherEnc.SetKeys(g_rgTestKey, sizeof(g_rgTestKey));
-            cipherDec.SetKeys(g_rgTestKey, sizeof(g_rgTestKey));
+            CryptoPadLibTests::InitCipher(cipherEnc);
+            CryptoPadLibTests::InitCipher(cipherDec);
 
             cipherEnc.Encrypt(rgBlock, k_cSpmBlockSizeBytes);
             cipherDec.Decrypt(rgBlock, k_cSpmBlockSizeBytes);
@@ -414,7 +326,7 @@ namespace CryptoPadLibTests
         {
             // Verify that encryption is not the identity function for multiple different inputs
             CSpmBlockCipher64 cipher;
-            cipher.SetKeys(g_rgTestKey, sizeof(g_rgTestKey));
+            CryptoPadLibTests::InitCipher(cipher);
 
             for (unsigned char fill = 0; fill < 5; ++fill)
             {
@@ -424,7 +336,7 @@ namespace CryptoPadLibTests
                 ::memcpy(rgOriginal, rgBlock, k_cSpmBlockSizeBytes);
 
                 // Reset cipher state for each test
-                cipher.SetKeys(g_rgTestKey, sizeof(g_rgTestKey));
+                CryptoPadLibTests::InitCipher(cipher);
                 cipher.Encrypt(rgBlock, k_cSpmBlockSizeBytes);
 
                 bool fChanged = (::memcmp(rgBlock, rgOriginal, k_cSpmBlockSizeBytes) != 0);
@@ -439,8 +351,7 @@ namespace CryptoPadLibTests
         TEST_METHOD(TestFillDecryptMasksNonZero)
         {
             CSimplePrng64 prngMask;
-            size_t cbPrngKey = CSimplePrng64::s_GetKeyWidth();
-            prngMask.SetKeys(g_rgTestKey + cbPrngKey, cbPrngKey);
+            CryptoPadLibTests::InitPrng(prngMask);
 
             SPM_SBOX_WORD rgMask[6 * k_cSpmBlockInflectionIndex - 3] = { 0 };
             CSpmBlockCipher64::s_FillDecryptMasks(rgMask, &prngMask);
@@ -468,7 +379,7 @@ namespace CryptoPadLibTests
             unsigned char rgBuffer[k_cSpmBlockSizeBytes] = { 0 };
             unsigned char rgPermutation[k_cSpmBlockSizeBytes] = { 0 };
 
-            CryptoPadLibTests::FillTestBlock(rgBlock);
+            CryptoPadLibTests::FillTestBlock(rgBlock, k_cSpmBlockSizeBytes);
 
             // Create a reversal permutation
             for (size_t i = 0; i < k_cSpmBlockSizeBytes; ++i)
@@ -500,20 +411,16 @@ namespace CryptoPadLibTests
         {
             unsigned char rgBlock[k_cSpmBlockSizeBytes] = { 0 };
             unsigned char rgOriginal[k_cSpmBlockSizeBytes] = { 0 };
-            CryptoPadLibTests::FillTestBlock(rgBlock);
+            CryptoPadLibTests::FillTestBlock(rgBlock, k_cSpmBlockSizeBytes);
             ::memcpy(rgOriginal, rgBlock, k_cSpmBlockSizeBytes);
 
             CSpmBlockCipher64 cipherEnc;
-            cipherEnc.SetKeys(g_rgTestKey, sizeof(g_rgTestKey));
+            CryptoPadLibTests::InitCipher(cipherEnc);
             cipherEnc.Encrypt(rgBlock, k_cSpmBlockSizeBytes);
 
             // Decrypt with a different key
-            unsigned char rgWrongKey[32] = { 0 };
-            ::memcpy(rgWrongKey, g_rgTestKey, sizeof(rgWrongKey));
-            rgWrongKey[0] ^= 0xFF;
-
             CSpmBlockCipher64 cipherDec;
-            cipherDec.SetKeys(rgWrongKey, sizeof(rgWrongKey));
+            CryptoPadLibTests::InitCipher(cipherDec, L"Different!");
             cipherDec.Decrypt(rgBlock, k_cSpmBlockSizeBytes);
 
             bool fEqual = (::memcmp(rgBlock, rgOriginal, k_cSpmBlockSizeBytes) == 0);

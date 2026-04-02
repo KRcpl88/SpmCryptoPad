@@ -47,12 +47,14 @@ Hungarian notation is used throughout:
 | Prefix | Meaning | Example |
 |--------|---------|---------|
 | `h` | Handle | `hWnd`, `hFile`, `hInst` |
-| `sz` | Zero-terminated string | `szTitle`, `szWindowClass` |
-| `p` / `psz` | Pointer / pointer to string | `pBuffer`, `pszPassword` |
+| `sz` | Zero-terminated 8-bit ASCII string (local buffer) | `szTitle`, `szWindowClass` |
+| `p` | Pointer (non-string, non-array) | `pBuffer`, `pKey` |
+| `psz` | Pointer to 8-bit ASCII null-terminated string | `pszText`, `pszHashKey` |
+| `pwsz` | Pointer to wide (`wchar_t`) null-terminated string | `pwszPassword`, `pwszFilename` |
 | `dw` | DWORD | `dwBytesRead` |
 | `cb` | Count of bytes | `cbFileSize` |
 | `c` | Count of elements | `cBlocks`, `cMasks` |
-| `rg` | Fixed-size array | `rgBlock`, `rgNonce` |
+| `rg` | Fixed-size array — used for both local array variables and pointer parameters to fixed-size arrays | `rgBlock`, `rgNonce`, `rgPermutation` |
 | `f` | Boolean flag | `fOK` |
 | `k_` | Constant | `k_cSpmBlockSizeBytes` |
 | `C` | Class prefix | `CSpmBlockCipher64` |
@@ -104,10 +106,33 @@ All local variables must be initialized at the point of declaration:
 
 - **Fixed-size arrays**: initialize with `= { 0 }` or with explicit data (e.g., `unsigned char rgBuf[128] = { 0 };`).
 - **Class/struct objects**: rely on the constructor to initialize all data members. Every class must have a constructor that initializes all data members, either via an initializer list or assignments in the constructor body.
-- **Pointers**: initialize with `new`/`new[]` or `nullptr` / `NULL` (e.g., `LPWSTR pszText = nullptr;`).
+- **Pointers**: initialize with `new`/`new[]` or `nullptr` / `NULL` (e.g., `LPWSTR pwszText = nullptr;`).
 - **Integer types** (`int`, `size_t`, `DWORD`, etc.): initialize to `0` (e.g., `size_t i = 0;`).
 - **Boolean types**: initialize to `false` (e.g., `bool fOK = false;`).
 - **Enum types**: may be initialized to `0` or a named enumerator (e.g., `BLOCK_MODE eMode = NoPermutation;`).
+
+### SAL annotations
+
+All function parameters must be annotated with SAL (Source Annotation Language) to document intent and enable static analysis:
+
+- Use `__in` for non-null scalar inputs (e.g., `__in size_t cbKey`).
+- Use `__in_z` for non-null null-terminated 8-bit ASCII string inputs (e.g., `__in_z const char* pszText`).
+- Use `__in_z` for non-null null-terminated wide string inputs (e.g., `__in_z LPCWSTR pwszFilename`).
+- Use `__in_z_opt` for optional (possibly null) null-terminated string inputs.
+- Use `__in_bcount(n)` for non-null input buffers of `n` bytes (e.g., `__in_bcount(cbKey) const unsigned char* rgKey`).
+- Use `__in_ecount(n)` for non-null input buffers of `n` elements (e.g., `__in_ecount(k_cSpmBlockSizeBytes) const unsigned char* rgPermutation`).
+- Use `__out_bcount(n)` for non-null output buffers of `n` bytes (e.g., `__out_bcount(cbBlock) unsigned char* rgBlock`).
+- Use `__out_ecount(n)` for non-null output buffers of `n` elements.
+- Use `__inout_bcount(n)` for non-null buffers that are both read and written (e.g., `__inout_bcount(k_cSpmBlockSizeBytes) BYTE* rgNonce`).
+- Use `__out` for non-null scalar output parameters (e.g., `__out size_t* pcb`).
+- Use `__inout` for non-null pointers that are both read and written (e.g., `__inout SPM_PRNG* pPrng`).
+
+### Buffer safety
+
+- Every function that takes a pointer to a buffer or fixed-size array **must** also accept an explicit size parameter (count of bytes, e.g., `cbBlock`, or count of elements, e.g., `cBlock`) for that buffer.
+- The size parameter must have a matching SAL annotation (e.g., `__in size_t cbBlock`).
+- The pointer parameter must have a SAL annotation that references the size parameter (e.g., `__out_bcount(cbBlock)`).
+- All loops over a buffer must use the size parameter passed in — never a hardcoded constant — to prevent buffer overflows.
 
 ### CI
 
