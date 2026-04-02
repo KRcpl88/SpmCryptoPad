@@ -19,11 +19,11 @@ namespace CryptoPadLibTests
     }
 
     // Helper: fill a block with a known pattern
-    static void FillTestBlock(__out_bcount(cbBlock) unsigned char* prgBlock, __in size_t cbBlock)
+    static void FillTestBlock(__out_bcount(cbBlock) unsigned char* rgBlock, __in size_t cbBlock)
     {
         for (size_t i = 0; i < cbBlock; ++i)
         {
-            prgBlock[i] = static_cast<unsigned char>(i & 0xFF);
+            rgBlock[i] = static_cast<unsigned char>(i & 0xFF);
         }
     }
 

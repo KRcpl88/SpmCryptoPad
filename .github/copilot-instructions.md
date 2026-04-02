@@ -51,11 +51,10 @@ Hungarian notation is used throughout:
 | `p` | Pointer (non-string, non-array) | `pBuffer`, `pKey` |
 | `psz` | Pointer to 8-bit ASCII null-terminated string | `pszText`, `pszHashKey` |
 | `pwsz` | Pointer to wide (`wchar_t`) null-terminated string | `pwszPassword`, `pwszFilename` |
-| `prg` | Pointer to a fixed-size array (buffer) | `prgBlock`, `prgNonce` |
 | `dw` | DWORD | `dwBytesRead` |
 | `cb` | Count of bytes | `cbFileSize` |
 | `c` | Count of elements | `cBlocks`, `cMasks` |
-| `rg` | Fixed-size array | `rgBlock`, `rgNonce` |
+| `rg` | Fixed-size array — used for both local array variables and pointer parameters to fixed-size arrays | `rgBlock`, `rgNonce`, `rgPermutation` |
 | `f` | Boolean flag | `fOK` |
 | `k_` | Constant | `k_cSpmBlockSizeBytes` |
 | `C` | Class prefix | `CSpmBlockCipher64` |
@@ -120,11 +119,11 @@ All function parameters must be annotated with SAL (Source Annotation Language) 
 - Use `__in_z` for non-null null-terminated 8-bit ASCII string inputs (e.g., `__in_z const char* pszText`).
 - Use `__in_z` for non-null null-terminated wide string inputs (e.g., `__in_z LPCWSTR pwszFilename`).
 - Use `__in_opt_z` for optional (possibly null) null-terminated string inputs.
-- Use `__in_bcount(n)` for non-null input buffers of `n` bytes (e.g., `__in_bcount(cbKey) const unsigned char* prgKey`).
-- Use `__in_ecount(n)` for non-null input buffers of `n` elements (e.g., `__in_ecount(k_cSpmBlockSizeBytes) const unsigned char* prgPermutation`).
-- Use `__out_bcount(n)` for non-null output buffers of `n` bytes (e.g., `__out_bcount(cbBlock) unsigned char* prgBlock`).
+- Use `__in_bcount(n)` for non-null input buffers of `n` bytes (e.g., `__in_bcount(cbKey) const unsigned char* rgKey`).
+- Use `__in_ecount(n)` for non-null input buffers of `n` elements (e.g., `__in_ecount(k_cSpmBlockSizeBytes) const unsigned char* rgPermutation`).
+- Use `__out_bcount(n)` for non-null output buffers of `n` bytes (e.g., `__out_bcount(cbBlock) unsigned char* rgBlock`).
 - Use `__out_ecount(n)` for non-null output buffers of `n` elements.
-- Use `__inout_bcount(n)` for non-null buffers that are both read and written (e.g., `__inout_bcount(k_cSpmBlockSizeBytes) BYTE* prgNonce`).
+- Use `__inout_bcount(n)` for non-null buffers that are both read and written (e.g., `__inout_bcount(k_cSpmBlockSizeBytes) BYTE* rgNonce`).
 - Use `__out` for non-null scalar output parameters (e.g., `__out size_t* pcb`).
 - Use `__inout` for non-null pointers that are both read and written (e.g., `__inout SPM_PRNG* pPrng`).
 
