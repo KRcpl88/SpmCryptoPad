@@ -9,11 +9,11 @@ namespace CryptoPadLibTests
     static const wchar_t* const k_pwszDefaultPassword = L"P@s$w0rd!";
 
     // Helper: set up a cipher instance with a password-derived key (defaults to k_pwszDefaultPassword)
-    static void InitCipher(CSpmBlockCipher64& cipher, __in_opt_z const wchar_t* pwszPassword = k_pwszDefaultPassword)
+    static void InitCipher(CSpmBlockCipher64& cipher, __in_z LPCWSTR lpwszPassword = k_pwszDefaultPassword)
     {
         size_t cbKey = CSpmBlockCipher64::s_GetKeyWidth();
         unsigned char* pKey = nullptr;
-        ParsePassword(pwszPassword, cbKey, &pKey);
+        ParsePassword(lpwszPassword, cbKey, &pKey);
         cipher.SetKeys(pKey, cbKey);
         delete[] pKey;
     }

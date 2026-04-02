@@ -118,7 +118,7 @@ All function parameters must be annotated with SAL (Source Annotation Language) 
 - Use `__in` for non-null scalar inputs (e.g., `__in size_t cbKey`).
 - Use `__in_z` for non-null null-terminated 8-bit ASCII string inputs (e.g., `__in_z const char* pszText`).
 - Use `__in_z` for non-null null-terminated wide string inputs (e.g., `__in_z LPCWSTR pwszFilename`).
-- Use `__in_opt_z` for optional (possibly null) null-terminated string inputs.
+- Use `__in_z_opt` for optional (possibly null) null-terminated string inputs.
 - Use `__in_bcount(n)` for non-null input buffers of `n` bytes (e.g., `__in_bcount(cbKey) const unsigned char* rgKey`).
 - Use `__in_ecount(n)` for non-null input buffers of `n` elements (e.g., `__in_ecount(k_cSpmBlockSizeBytes) const unsigned char* rgPermutation`).
 - Use `__out_bcount(n)` for non-null output buffers of `n` bytes (e.g., `__out_bcount(cbBlock) unsigned char* rgBlock`).
