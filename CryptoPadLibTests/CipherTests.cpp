@@ -1,5 +1,6 @@
 #include "CppUnitTest.h"
 #include "../CryptoPadLib/SpmBlockCipher64.h"
+#include "../CryptoPadLib/CryptoPadUtils.h"
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
@@ -13,10 +14,14 @@ namespace CryptoPadLibTests
         0x28, 0x39, 0x4A, 0x5B, 0x6C, 0x7D, 0x8E, 0x9F
     };
 
-    // Helper: set up a cipher instance with the fixed test key
+    // Helper: set up a cipher instance with the password-derived key
     static void InitCipher(CSpmBlockCipher64& cipher)
     {
-        cipher.SetKeys(g_rgTestKey, sizeof(g_rgTestKey));
+        size_t cbKey = CSpmBlockCipher64::s_GetKeyWidth();
+        unsigned char* pKey = nullptr;
+        ParsePassword(L"P@s$w0rd!", cbKey, &pKey);
+        cipher.SetKeys(pKey, cbKey);
+        delete[] pKey;
     }
 
     // Helper: create two identically-seeded PRNGs from the test key

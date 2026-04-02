@@ -179,42 +179,6 @@ INT_PTR CALLBACK PasswordDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM 
     return (INT_PTR)FALSE;
 }
 
-void ParsePassword(__inout_z LPCWSTR pszPassword, __in size_t cbBin, __out_bcount(cbBin) unsigned char** ppBin)
-{
-    size_t i = 0;
-    bool fFirstPass = true;
-    bool fPasswordIncomplete = true;
-    LPCWSTR pszTemp = NULL;
-
-    *ppBin = new unsigned char[cbBin];
-    memset(*ppBin, 0, cbBin);
-
-    pszTemp = pszPassword;
-
-    while (fFirstPass || ((*pszTemp) && fPasswordIncomplete))
-    {
-        if ((*pszTemp) == 0)
-        {
-            pszTemp = pszPassword;
-        }
-
-        *(reinterpret_cast<WCHAR*>(*ppBin + i)) += *pszTemp;
-        ++pszTemp;
-
-        if ((*pszTemp) == 0)
-        {
-            fPasswordIncomplete = false;
-        }
-
-        i += sizeof(*pszTemp);
-        if (i >= cbBin)
-        {
-            fFirstPass = false;
-            i = 0;
-        }
-    }
-}
-
 // Message handler for password dialog box.
 INT_PTR CALLBACK SearchDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 {
