@@ -6,20 +6,14 @@ using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
 namespace CryptoPadLibTests
 {
-    // Helper: set up a cipher instance with a password-derived key
-    static void InitCipherWithPassword(CSpmBlockCipher64& cipher, const wchar_t* pszPassword)
+    // Helper: set up a cipher instance with a password-derived key (defaults to L"P@s$w0rd!")
+    static void InitCipher(CSpmBlockCipher64& cipher, const wchar_t* pszPassword = L"P@s$w0rd!")
     {
         size_t cbKey = CSpmBlockCipher64::s_GetKeyWidth();
         unsigned char* pKey = nullptr;
         ParsePassword(pszPassword, cbKey, &pKey);
         cipher.SetKeys(pKey, cbKey);
         delete[] pKey;
-    }
-
-    // Helper: set up a cipher instance with the password-derived key
-    static void InitCipher(CSpmBlockCipher64& cipher)
-    {
-        CryptoPadLibTests::InitCipherWithPassword(cipher, L"P@s$w0rd!");
     }
 
     // Helper: fill a block with a known pattern
@@ -266,7 +260,7 @@ namespace CryptoPadLibTests
         {
             CSpmBlockCipher64 cipher1, cipher2;
             CryptoPadLibTests::InitCipher(cipher1);
-            CryptoPadLibTests::InitCipherWithPassword(cipher2, L"Different!");
+            CryptoPadLibTests::InitCipher(cipher2, L"Different!");
 
             unsigned char rgBlock1[k_cSpmBlockSizeBytes] = { 0 };
             unsigned char rgBlock2[k_cSpmBlockSizeBytes] = { 0 };
@@ -424,7 +418,7 @@ namespace CryptoPadLibTests
 
             // Decrypt with a different key
             CSpmBlockCipher64 cipherDec;
-            CryptoPadLibTests::InitCipherWithPassword(cipherDec, L"Different!");
+            CryptoPadLibTests::InitCipher(cipherDec, L"Different!");
             cipherDec.Decrypt(rgBlock, k_cSpmBlockSizeBytes);
 
             bool fEqual = (::memcmp(rgBlock, rgOriginal, k_cSpmBlockSizeBytes) == 0);
