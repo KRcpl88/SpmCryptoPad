@@ -1,7 +1,7 @@
 #include "../CryptoPad/framework.h"
 #include "SpmBlockCipher64.h"
 
-
+C_ASSERT(sizeof(size_t) <= sizeof(SPM_WORD));
 
 CSimplePrng64::CSimplePrng64() : m_wState(0), m_wKey(0), m_idx(0)
 {
