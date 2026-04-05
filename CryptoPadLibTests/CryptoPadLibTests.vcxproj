@@ -161,6 +161,9 @@
     <ClCompile Include="ParsePasswordTests.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="TestConstants.h" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="..\CryptoPadLib\CryptoPadLib.vcxproj">
       <Project>{b2e1a3c4-d5f6-7890-1234-abcdef567890}</Project>
     </ProjectReference>
