@@ -1,0 +1,78 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Build Solution (Release x64)",
+            "type": "process",
+            "command": "C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\MSBuild\\Current\\Bin\\amd64\\MSBuild.exe",
+            "args": [
+                "CryptoPad.sln",
+                "/p:Configuration=Release",
+                "/p:Platform=x64",
+                "/p:PlatformToolset=v143",
+                "/m"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "problemMatcher": "$msCompile",
+            "presentation": {
+                "reveal": "always",
+                "clear": true
+            }
+        },
+        {
+            "label": "Build Solution (Debug x64)",
+            "type": "process",
+            "command": "C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\MSBuild\\Current\\Bin\\amd64\\MSBuild.exe",
+            "args": [
+                "CryptoPad.sln",
+                "/p:Configuration=Debug",
+                "/p:Platform=x64",
+                "/p:PlatformToolset=v143",
+                "/m"
+            ],
+            "group": "build",
+            "problemMatcher": "$msCompile",
+            "presentation": {
+                "reveal": "always",
+                "clear": true
+            }
+        },
+        {
+            "label": "Run Tests",
+            "type": "process",
+            "command": "C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\Common7\\IDE\\CommonExtensions\\Microsoft\\TestWindow\\vstest.console.exe",
+            "args": [
+                "x64\\Release\\CryptoPadLibTests.dll"
+            ],
+            "group": {
+                "kind": "test",
+                "isDefault": true
+            },
+            "dependsOn": "Build Solution (Release x64)",
+            "problemMatcher": [],
+            "presentation": {
+                "reveal": "always",
+                "clear": true
+            }
+        },
+        {
+            "label": "Clean Solution",
+            "type": "process",
+            "command": "C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\MSBuild\\Current\\Bin\\amd64\\MSBuild.exe",
+            "args": [
+                "CryptoPad.sln",
+                "/t:Clean",
+                "/p:Configuration=Release",
+                "/p:Platform=x64"
+            ],
+            "problemMatcher": "$msCompile",
+            "presentation": {
+                "reveal": "always",
+                "clear": true
+            }
+        }
+    ]
+}
