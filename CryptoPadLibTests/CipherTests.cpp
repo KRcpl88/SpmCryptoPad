@@ -226,6 +226,56 @@ namespace CryptoPadLibTests
             Assert::IsTrue(fEqual, L"Decrypt should restore original plaintext (Permutation mode)");
         }
 
+        TEST_METHOD(TestEncryptDecryptTwoBlocksFixedStaticData)
+        {
+            // Fixed static ASCII test data: two 128-byte blocks (256 chars, excluding null terminator)
+            static const char k_szPlaintext[] =
+                "Block 1        |               |               |               |               |               |               |               |"
+                "Block 2        |               |               |               |               |               |               |               |";
+
+            const size_t cbData = sizeof(k_szPlaintext) - 1; // exclude null terminator
+            unsigned char rgData[cbData] = { 0 };
+            memcpy(rgData, k_szPlaintext, cbData);
+            bool fMatch = false;
+
+            CSpmBlockCipher64 cipherEnc, cipherDec;
+
+            size_t cbExpectedData = 0;
+            unsigned char* pExpectedData = NULL;
+            char rgExpectedDataHex[] =
+                "d404c750c60eb8a7249e6a44360378b26b9b8f75e31a7ddb6bbe9085077e85cb"
+                "56880e2ca5674b6059853c1ef0fa4364f82578c5fced5984e754a31ef78a4dba"
+                "dd2188e1cc1d7c49e6472ee40662cd203fb381ecfd28cae2dce9d4734282ea25"
+                "9a57d611c8537cdf7eb2ae2eaf5d646bd1f385b3256d492cb395b20bf7edf045"
+                "4d75107cb30417f04113572132e522de71954f7a2a161a9239fe8c50222e13e7"
+                "d53fbe56d6a74792043369b7a51eeb77db18ab349898f2db6928cf1adf374003"
+                "a93b49c95d05295e82f8ac816db0b920e4f6f5385b63c177b56cf2e4346894cd"
+                "21eb82eb50c7d475ee817fdc564adfbaa527cad67fa5b1315df0e2e48d86a309";
+
+            HexToBin(rgExpectedDataHex, 1, &cbExpectedData, &pExpectedData);
+
+            CryptoPadLibTests::InitCipher(cipherEnc);
+            CryptoPadLibTests::InitCipher(cipherDec);
+
+            cipherEnc.Encrypt(rgData, cbData);
+
+            fMatch = (::memcmp(rgData, pExpectedData, cbExpectedData) == 0);
+            delete[] pExpectedData;
+            pExpectedData = nullptr;
+            Assert::IsTrue(fMatch, L"Encryption should match expected plaintext");
+
+            fMatch = (::memcmp(rgData, k_szPlaintext, cbData) == 0);
+            Assert::IsFalse(fMatch, L"Encrypting fixed static data should produce different ciphertext");
+
+            cipherDec.Decrypt(rgData, cbData);
+
+            fMatch = (::memcmp(rgData, k_szPlaintext, cbData) == 0);
+            Assert::IsTrue(fMatch, L"Decrypting should restore original fixed static plaintext");
+
+
+
+        }
+
         TEST_METHOD(TestEncryptDecryptMultipleBlocks)
         {
             const size_t cBlocks = 4;
