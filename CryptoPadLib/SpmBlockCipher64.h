@@ -45,6 +45,7 @@ public:
 
     SPM_WORD GetState() const { return m_wState; }
     SPM_WORD GetKey() const { return m_wKey; }
+    size_t GetIdx() const { return m_idx; }
 
     static size_t s_GetKeyWidth()
     {
