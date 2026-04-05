@@ -1,7 +1,7 @@
 #include "../CryptoPad/framework.h"
 #include "SpmBlockCipher64.h"
 
-
+C_ASSERT(sizeof(size_t) <= sizeof(SPM_WORD));
 
 CSimplePrng64::CSimplePrng64() : m_wState(0), m_wKey(0), m_idx(0)
 {
@@ -287,6 +287,16 @@ void CSpmBlockCipher64::SetKeys(__in_bcount(cbKeyData) const unsigned char * pKe
     InitSbox();
 
     PermuteSbox();
+}
+
+void CSpmBlockCipher64::GetPrngState(__out_ecount(6) SPM_WORD* rgState)
+{
+    rgState[0] = m_prngSBox.GetState();
+    rgState[1] = m_prngSBox.GetKey();
+    rgState[2] = (SPM_WORD)m_prngSBox.GetIdx();
+    rgState[3] = m_prngMask.GetState();
+    rgState[4] = m_prngMask.GetKey();
+    rgState[5] = (SPM_WORD)m_prngMask.GetIdx();
 }
 
 void CSpmBlockCipher64::s_SmForwardPass(
