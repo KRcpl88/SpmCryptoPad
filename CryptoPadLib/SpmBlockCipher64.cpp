@@ -289,12 +289,14 @@ void CSpmBlockCipher64::SetKeys(__in_bcount(cbKeyData) const unsigned char * pKe
     PermuteSbox();
 }
 
-void CSpmBlockCipher64::GetPrngState(__out_ecount(4) SPM_WORD* rgState)
+void CSpmBlockCipher64::GetPrngState(__out_ecount(6) SPM_WORD* rgState)
 {
     rgState[0] = m_prngSBox.GetState();
     rgState[1] = m_prngSBox.GetKey();
-    rgState[2] = m_prngMask.GetState();
-    rgState[3] = m_prngMask.GetKey();
+    rgState[2] = (SPM_WORD)m_prngSBox.GetIdx();
+    rgState[3] = m_prngMask.GetState();
+    rgState[4] = m_prngMask.GetKey();
+    rgState[5] = (SPM_WORD)m_prngMask.GetIdx();
 }
 
 void CSpmBlockCipher64::s_SmForwardPass(

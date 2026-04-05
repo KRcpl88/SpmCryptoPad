@@ -111,7 +111,7 @@ public:
 
     virtual void SetKeys(__in_bcount(cKeyData) const unsigned char * pKeyData, size_t cbKeyData);
 
-    virtual void GetPrngState(__out_ecount(4) SPM_WORD* rgState);
+    virtual void GetPrngState(__out_ecount(6) SPM_WORD* rgState);
 
     // encryption and decryption are symetric opertations
     virtual void Encrypt(__in_bcount(cbData) unsigned char * pData, size_t cbData);
