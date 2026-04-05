@@ -289,6 +289,17 @@ void CSpmBlockCipher64::SetKeys(__in_bcount(cbKeyData) const unsigned char * pKe
     PermuteSbox();
 }
 
+void CSpmBlockCipher64::GetPrngState(__out_bcount(cbState) unsigned char* rgState, size_t cbState)
+{
+    size_t cbPrngKeyWidth = SPM_PRNG::s_GetKeyWidth();
+    ASSERT(cbState >= cbPrngKeyWidth * 2);
+
+    reinterpret_cast<SPM_WORD*>(rgState)[0] = m_prngSBox.GetState();
+    reinterpret_cast<SPM_WORD*>(rgState)[1] = m_prngSBox.GetKey();
+    reinterpret_cast<SPM_WORD*>(rgState + cbPrngKeyWidth)[0] = m_prngMask.GetState();
+    reinterpret_cast<SPM_WORD*>(rgState + cbPrngKeyWidth)[1] = m_prngMask.GetKey();
+}
+
 void CSpmBlockCipher64::s_SmForwardPass(
     __inout_bcount(k_cSpmBlockSizeBytes) unsigned char* pBlock,
     __inout SPM_PRNG* pPrngMask,

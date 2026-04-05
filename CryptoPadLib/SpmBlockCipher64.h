@@ -43,6 +43,9 @@ public:
         return reinterpret_cast<SPM_SBOX_WORD*>(&m_wState)[m_idx++];
     }
 
+    SPM_WORD GetState() const { return m_wState; }
+    SPM_WORD GetKey() const { return m_wKey; }
+
     static size_t s_GetKeyWidth()
     {
       size_t cKeyWidth = 0;
@@ -106,6 +109,8 @@ public:
     virtual bool ValidKey(__in_bcount(cKeyData) const unsigned char * pKeyData, size_t cbKeyData);
 
     virtual void SetKeys(__in_bcount(cKeyData) const unsigned char * pKeyData, size_t cbKeyData);
+
+    virtual void GetPrngState(__out_bcount(cbState) unsigned char* rgState, size_t cbState);
 
     // encryption and decryption are symetric opertations
     virtual void Encrypt(__in_bcount(cbData) unsigned char * pData, size_t cbData);
