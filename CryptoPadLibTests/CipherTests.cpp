@@ -257,6 +257,26 @@ namespace CryptoPadLibTests
             CryptoPadLibTests::InitCipher(cipherEnc);
             CryptoPadLibTests::InitCipher(cipherDec);
 
+            // Verify PRNG state of cipherEnc after InitCipher
+            SPM_WORD rgStateEnc[6] = { 0 };
+            cipherEnc.GetPrngState(rgStateEnc);
+            Assert::AreEqual(static_cast<SPM_WORD>(0xC988E4C161ECEDD9), rgStateEnc[0], L"cipherEnc SBox State mismatch");
+            Assert::AreEqual(static_cast<SPM_WORD>(0x0064007200300077), rgStateEnc[1], L"cipherEnc SBox Key mismatch");
+            Assert::AreEqual(static_cast<SPM_WORD>(4), rgStateEnc[2], L"cipherEnc SBox Idx mismatch");
+            Assert::AreEqual(static_cast<SPM_WORD>(0x0073004000500021), rgStateEnc[3], L"cipherEnc Mask State mismatch");
+            Assert::AreEqual(static_cast<SPM_WORD>(0x0072003000770025), rgStateEnc[4], L"cipherEnc Mask Key mismatch");
+            Assert::AreEqual(static_cast<SPM_WORD>(0), rgStateEnc[5], L"cipherEnc Mask Idx mismatch");
+
+            // Verify PRNG state of cipherDec after InitCipher (should match cipherEnc)
+            SPM_WORD rgStateDec[6] = { 0 };
+            cipherDec.GetPrngState(rgStateDec);
+            Assert::AreEqual(static_cast<SPM_WORD>(0xC988E4C161ECEDD9), rgStateDec[0], L"cipherDec SBox State mismatch");
+            Assert::AreEqual(static_cast<SPM_WORD>(0x0064007200300077), rgStateDec[1], L"cipherDec SBox Key mismatch");
+            Assert::AreEqual(static_cast<SPM_WORD>(4), rgStateDec[2], L"cipherDec SBox Idx mismatch");
+            Assert::AreEqual(static_cast<SPM_WORD>(0x0073004000500021), rgStateDec[3], L"cipherDec Mask State mismatch");
+            Assert::AreEqual(static_cast<SPM_WORD>(0x0072003000770025), rgStateDec[4], L"cipherDec Mask Key mismatch");
+            Assert::AreEqual(static_cast<SPM_WORD>(0), rgStateDec[5], L"cipherDec Mask Idx mismatch");
+
             cipherEnc.Encrypt(rgData, cbData);
 
             fMatch = (::memcmp(rgData, pExpectedData, cbExpectedData) == 0);
