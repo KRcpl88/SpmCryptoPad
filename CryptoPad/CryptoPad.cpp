@@ -16,7 +16,7 @@ HWND hSearchDlg = nullptr;                      // find dialog
 WCHAR szTitle[MAX_LOADSTRING];                  // The title bar text
 WCHAR szWindowClass[MAX_LOADSTRING];            // the main window class name
 WCHAR szPassword[1024] = { 0 };
-bool fAsciiPassword = false;
+bool fAsciiPassword = true;
 
 // Forward declarations of functions included in this code module:
 ATOM                MyRegisterClass(HINSTANCE hInstance);
