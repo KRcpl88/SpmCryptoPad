@@ -430,7 +430,7 @@ void ParsePasswordDispatch(__in_z LPCWSTR pwszPassword, __in size_t cbBin, __out
     char szPwdA[ARRAYSIZE(szPassword)] = { 0 };
     if (fAsciiPassword)
     {
-        ::WideCharToMultiByte(CP_ACP, 0, pwszPassword, -1, szPwdA, ARRAYSIZE(szPwdA), nullptr, nullptr);
+        ::WideCharToMultiByte(CP_UTF8, 0, pwszPassword, -1, szPwdA, ARRAYSIZE(szPwdA), nullptr, nullptr);
         ::ParsePasswordA(szPwdA, cbBin, ppBin);
     }
     else
