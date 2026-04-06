@@ -16,6 +16,7 @@ HWND hSearchDlg = nullptr;                      // find dialog
 WCHAR szTitle[MAX_LOADSTRING];                  // The title bar text
 WCHAR szWindowClass[MAX_LOADSTRING];            // the main window class name
 WCHAR szPassword[1024] = { 0 };
+bool fAsciiPassword = false;
 
 // Forward declarations of functions included in this code module:
 ATOM                MyRegisterClass(HINSTANCE hInstance);
@@ -156,6 +157,7 @@ INT_PTR CALLBACK PasswordDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM 
     case WM_INITDIALOG:
         ::SetDlgItemTextW(hDlg, IDC_PASSWORD, szPassword);
         ::SendDlgItemMessageW(hDlg, IDC_PASSWORD, EM_LIMITTEXT, ARRAYSIZE(szPassword) - 1, 0);
+        ::CheckDlgButton(hDlg, IDC_ASCII, fAsciiPassword ? BST_CHECKED : BST_UNCHECKED);
         return (INT_PTR)TRUE;
 
     case WM_COMMAND:
@@ -163,6 +165,7 @@ INT_PTR CALLBACK PasswordDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM 
         {
         case IDOK:
             ::GetDlgItemText(hDlg, IDC_PASSWORD, szPassword, ARRAYSIZE(szPassword) - 1);
+            fAsciiPassword = (::IsDlgButtonChecked(hDlg, IDC_ASCII) == BST_CHECKED);
         case IDCANCEL:
             ::EndDialog(hDlg, LOWORD(wParam));
             return (INT_PTR)TRUE;
@@ -422,12 +425,26 @@ Done:
 }
 
 
+void ParsePasswordDispatch(__in_z LPCWSTR pwszPassword, __in size_t cbBin, __out_bcount(cbBin) unsigned char** ppBin)
+{
+    char szPwdA[ARRAYSIZE(szPassword)] = { 0 };
+    if (fAsciiPassword)
+    {
+        ::WideCharToMultiByte(CP_ACP, 0, pwszPassword, -1, szPwdA, ARRAYSIZE(szPwdA), nullptr, nullptr);
+        ::ParsePasswordA(szPwdA, cbBin, ppBin);
+    }
+    else
+    {
+        ::ParsePasswordW(pwszPassword, cbBin, ppBin);
+    }
+}
+
 void EncryptFile(__in_z LPCWSTR pszFilename, __in_z const LPCWSTR pszPassword)
 {
     WCHAR szEncryptedFile[260] = { 0 };       // buffer for encrypted file name
     unsigned char* pKey = new unsigned char[FBC_CRYPT::s_GetKeyWidth()];
 
-    ::ParsePassword(pszPassword, FBC_CRYPT::s_GetKeyWidth(), &pKey);
+    ParsePasswordDispatch(pszPassword, FBC_CRYPT::s_GetKeyWidth(), &pKey);
     ASSERT(FBC_CRYPT::s_ValidKey(pKey, FBC_CRYPT::s_GetKeyWidth()));
 
     if (FAILED(::StringCchPrintfW(szEncryptedFile, ARRAYSIZE(szEncryptedFile), L"%s.spmbc", pszFilename)))
@@ -452,7 +469,7 @@ void DecryptFile(__in_z LPCWSTR pszFilename, __in_z const LPCWSTR pszPassword)
     unsigned char* pKey = new unsigned char[FBC_CRYPT::s_GetKeyWidth()];
     LPWSTR pszExt = NULL;
     
-    ::ParsePassword(pszPassword, FBC_CRYPT::s_GetKeyWidth(), &pKey);
+    ParsePasswordDispatch(pszPassword, FBC_CRYPT::s_GetKeyWidth(), &pKey);
     ASSERT(FBC_CRYPT::s_ValidKey(pKey, FBC_CRYPT::s_GetKeyWidth()));
 
     if (FAILED(::StringCchPrintfW(szDecryptedFile, ARRAYSIZE(szDecryptedFile), L"%s", pszFilename)))
@@ -489,7 +506,7 @@ void SaveEncryptedFile(__in_z LPCWSTR pszFilename, __in_z LPCWSTR pszText, __in_
     HANDLE hFileOut = INVALID_HANDLE_VALUE;
     BOOL fOK = FALSE;
 
-    ::ParsePassword(pszPassword, FBC_CRYPT::s_GetKeyWidth(), &pKey);
+    ParsePasswordDispatch(pszPassword, FBC_CRYPT::s_GetKeyWidth(), &pKey);
     ASSERT(FBC_CRYPT::s_ValidKey(pKey, FBC_CRYPT::s_GetKeyWidth()));
 
     ::ZeroMemory(pBuffer, k_cSpmBlockSizeBytes * cBlocks);
@@ -586,7 +603,7 @@ void ReadEncryptedFile(__in_z LPCWSTR pszFilename, __in_ecount_z(0x100000) LPWST
     }
 
 
-    ::ParsePassword(pszPassword, FBC_CRYPT::s_GetKeyWidth(), &pKey);
+    ParsePasswordDispatch(pszPassword, FBC_CRYPT::s_GetKeyWidth(), &pKey);
     ASSERT(FBC_CRYPT::s_ValidKey(pKey, FBC_CRYPT::s_GetKeyWidth()));
 
     ::ApplyNonce(pNonce, pKey, FBC_CRYPT::s_GetKeyWidth(), pFbcDecrypt);
