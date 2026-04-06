@@ -6,14 +6,14 @@ using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
 namespace CryptoPadLibTests
 {
-    static const wchar_t* const k_pwszDefaultPassword = L"P@s$w0rd!";
+    static const char* const k_pszDefaultPassword = "P@s$w0rd!";
 
-    // Helper: set up a cipher instance with a password-derived key (defaults to k_pwszDefaultPassword)
-    static void InitCipher(CSpmBlockCipher64& cipher, __in_z const wchar_t* lpwszPassword = k_pwszDefaultPassword)
+    // Helper: set up a cipher instance with a password-derived key (defaults to k_pszDefaultPassword)
+    static void InitCipher(CSpmBlockCipher64& cipher, __in_z const char* pszPassword = k_pszDefaultPassword)
     {
         size_t cbKey = CSpmBlockCipher64::s_GetKeyWidth();
         unsigned char* pKey = nullptr;
-        ParsePasswordW(lpwszPassword, cbKey, &pKey);
+        ParsePasswordA(pszPassword, cbKey, &pKey);
         cipher.SetKeys(pKey, cbKey);
         delete[] pKey;
     }
@@ -32,7 +32,7 @@ namespace CryptoPadLibTests
     {
         size_t cbKey = CSimplePrng64::s_GetKeyWidth();
         unsigned char* pKey = nullptr;
-        ParsePasswordW(k_pwszDefaultPassword, cbKey, &pKey);
+        ParsePasswordA(k_pszDefaultPassword, cbKey, &pKey);
         prng.SetKeys(pKey, cbKey);
         delete[] pKey;
     }
@@ -266,14 +266,14 @@ namespace CryptoPadLibTests
             size_t cbExpectedData = 0;
             unsigned char* pExpectedData = NULL;
             char rgExpectedDataHex[] =
-                "d404c750c60eb8a7249e6a44360378b26b9b8f75e31a7ddb6bbe9085077e85cb"
-                "56880e2ca5674b6059853c1ef0fa4364f82578c5fced5984e754a31ef78a4dba"
-                "dd2188e1cc1d7c49e6472ee40662cd203fb381ecfd28cae2dce9d4734282ea25"
-                "9a57d611c8537cdf7eb2ae2eaf5d646bd1f385b3256d492cb395b20bf7edf045"
-                "4d75107cb30417f04113572132e522de71954f7a2a161a9239fe8c50222e13e7"
-                "d53fbe56d6a74792043369b7a51eeb77db18ab349898f2db6928cf1adf374003"
-                "a93b49c95d05295e82f8ac816db0b920e4f6f5385b63c177b56cf2e4346894cd"
-                "21eb82eb50c7d475ee817fdc564adfbaa527cad67fa5b1315df0e2e48d86a309";
+                "3d65962f36523e98649efe005a57d5d80376374f8f2600923d98d9c5766ab9ce"
+                "dc40bd3045654a17a4ebab25071a23279b21906ebdee4b001bd21c20a64f8364"
+                "7eda8ee25ebbc89cdea630ccbd4ddc0bec3a9c1de8517efddf48c9612baa6ad7"
+                "844f27adf06a132a4dc63897f72dd1ecf0d12bdfae9985474f9cbdad0c4f0297"
+                "60c2b2bc25ef562ff8ff489173086beda3b13d3d145b67df84cce111be730c00"
+                "008ef5f37017a4576547586f08f4de8fac9c8ae1421247378854acbba90d0c12"
+                "684d517f5c769dec6f260bc162aa84ea46ddb0e6340512e1e1231cc841c73772"
+                "164d73af893d3b842e27e2e8650d8af14f2c7aa0b93a3a33e4ffcc25c42a4cd2";
 
             HexToBin(rgExpectedDataHex, 1, &cbExpectedData, &pExpectedData);
 
@@ -283,21 +283,21 @@ namespace CryptoPadLibTests
             // Verify PRNG state of cipherEnc after InitCipher
             SPM_WORD rgStateEnc[6] = { 0 };
             cipherEnc.GetPrngState(rgStateEnc);
-            Assert::AreEqual(static_cast<SPM_WORD>(0xC988E4C161ECEDD9), rgStateEnc[0], L"cipherEnc SBox State mismatch");
-            Assert::AreEqual(static_cast<SPM_WORD>(0x0064007200300077), rgStateEnc[1], L"cipherEnc SBox Key mismatch");
+            Assert::AreEqual(static_cast<SPM_WORD>(0x2FC1CF3A7257322F), rgStateEnc[0], L"cipherEnc SBox State mismatch");
+            Assert::AreEqual(static_cast<SPM_WORD>(0x7230772473405021), rgStateEnc[1], L"cipherEnc SBox Key mismatch");
             Assert::AreEqual(static_cast<SPM_WORD>(4), rgStateEnc[2], L"cipherEnc SBox Idx mismatch");
-            Assert::AreEqual(static_cast<SPM_WORD>(0x0073004000500021), rgStateEnc[3], L"cipherEnc Mask State mismatch");
-            Assert::AreEqual(static_cast<SPM_WORD>(0x0072003000770025), rgStateEnc[4], L"cipherEnc Mask Key mismatch");
+            Assert::AreEqual(static_cast<SPM_WORD>(0x3077247340502164), rgStateEnc[3], L"cipherEnc Mask State mismatch");
+            Assert::AreEqual(static_cast<SPM_WORD>(0x7724734050216473), rgStateEnc[4], L"cipherEnc Mask Key mismatch");
             Assert::AreEqual(static_cast<SPM_WORD>(0), rgStateEnc[5], L"cipherEnc Mask Idx mismatch");
 
             // Verify PRNG state of cipherDec after InitCipher (should match cipherEnc)
             SPM_WORD rgStateDec[6] = { 0 };
             cipherDec.GetPrngState(rgStateDec);
-            Assert::AreEqual(static_cast<SPM_WORD>(0xC988E4C161ECEDD9), rgStateDec[0], L"cipherDec SBox State mismatch");
-            Assert::AreEqual(static_cast<SPM_WORD>(0x0064007200300077), rgStateDec[1], L"cipherDec SBox Key mismatch");
+            Assert::AreEqual(static_cast<SPM_WORD>(0x2FC1CF3A7257322F), rgStateDec[0], L"cipherDec SBox State mismatch");
+            Assert::AreEqual(static_cast<SPM_WORD>(0x7230772473405021), rgStateDec[1], L"cipherDec SBox Key mismatch");
             Assert::AreEqual(static_cast<SPM_WORD>(4), rgStateDec[2], L"cipherDec SBox Idx mismatch");
-            Assert::AreEqual(static_cast<SPM_WORD>(0x0073004000500021), rgStateDec[3], L"cipherDec Mask State mismatch");
-            Assert::AreEqual(static_cast<SPM_WORD>(0x0072003000770025), rgStateDec[4], L"cipherDec Mask Key mismatch");
+            Assert::AreEqual(static_cast<SPM_WORD>(0x3077247340502164), rgStateDec[3], L"cipherDec Mask State mismatch");
+            Assert::AreEqual(static_cast<SPM_WORD>(0x7724734050216473), rgStateDec[4], L"cipherDec Mask Key mismatch");
             Assert::AreEqual(static_cast<SPM_WORD>(0), rgStateDec[5], L"cipherDec Mask Idx mismatch");
 
             cipherEnc.Encrypt(rgData, cbData);
@@ -355,7 +355,7 @@ namespace CryptoPadLibTests
         {
             CSpmBlockCipher64 cipher1, cipher2;
             CryptoPadLibTests::InitCipher(cipher1);
-            CryptoPadLibTests::InitCipher(cipher2, L"Different!");
+            CryptoPadLibTests::InitCipher(cipher2, "Different!");
 
             unsigned char rgBlock1[k_cSpmBlockSizeBytes] = { 0 };
             unsigned char rgBlock2[k_cSpmBlockSizeBytes] = { 0 };
@@ -513,7 +513,7 @@ namespace CryptoPadLibTests
 
             // Decrypt with a different key
             CSpmBlockCipher64 cipherDec;
-            CryptoPadLibTests::InitCipher(cipherDec, L"Different!");
+            CryptoPadLibTests::InitCipher(cipherDec, "Different!");
             cipherDec.Decrypt(rgBlock, k_cSpmBlockSizeBytes);
 
             bool fEqual = (::memcmp(rgBlock, rgOriginal, k_cSpmBlockSizeBytes) == 0);
@@ -545,119 +545,119 @@ namespace CryptoPadLibTests
 
             // Expected block permutations after shuffle
             static const char k_szEncB0Perm[] =
-                "59262e1b13302c5c253c2f2d3124760e1c685302637423646e1a4d083d5d6227"
-                "706948327939653e61340b6003383314190d457800730f2b713f495f586f4b6a"
-                "3a4f106c055e5204115440427d6b3528464e67097e4401072a512937224a4372"
-                "504736664c217a566d1712187b7f0a0c061e5a1657775b7c3b1d4115751f5520";
+                "722a235128132f4d7d080e2d4a7e204f5d582c145b0005500b4447733d484c0c"
+                "123c6f5a1c177c2b335c663e6c64635443365f6b563f320f1f24795746776d4e"
+                "3571417a256a596570753b7b031a151934017f162168533927181b060d076e1e"
+                "787460623a09024922043026760a401d29674231454b37526155105e2e691138";
 
             static const char k_szEncB1Perm[] =
-                "591e226b71667d2f55157045186d3341373d105163446c5c0e475d672e0d6927"
-                "0c0749214d53310b240a192d48621d4c3e1608431c011f5f427b14563b752325"
-                "7226062c6412293209543a5736523f7a354e000f4f74387c2a6f6a7e02614a20"
-                "0446655e286e0340303c05601a34585079171b4b5a776878735b137f11392b76";
+                "66061e331b045524355418750857347a3258375e60744d4e41382d442161395d"
+                "633e760547534248720e100b3f13701219506b112765221d253a6e2b430f4f45"
+                "303d735b09024a235a6c790c4c647c6f003146563c7f2c71671a7d0117072051"
+                "6236402e7b0d77034b2f5f591f296a6952165c2a4914263b6d287e7815681c0a";
 
             // Expected encrypt intermediate states: [block][round * 3 + substep]
             // substep: 0 = after s_SmForwardPass, 1 = after s_SmReversePass, 2 = after s_ApplyPermutation
             static const char* const k_rgszEncB0[] =
             {
                 // Round 0
-                "3b2ebb68086f09393dcc861859f7ef1707470f0029ad4dda36e01ef0530cee80"
-                "79e5e8eb58279576b2dd9e5fc067c3ccb972bd918bbabdf766408be61e12a998"
-                "ebd436ea91f203bced1f75c16baf79824ecf540726e8c728c9c08f3336cb83a2"
-                "da266447d5648e0b90dcb3292e745ef00a811df1944b3fe1a5a709611f77d81d",
+                "b88bfcdd33cec4799c6729d36cf6c0c14f80f18db0821008aac2ad7eb696a3ec"
+                "c420a06790c89cdab8c2f0fec5d35769799eaee07e9c1ddb48943182c2bfaa3f"
+                "06fad0132681f426a5e92f1a73c0bfd92ba094b3e91f2c0b9cf05d7b687b3217"
+                "319ff5aa3e1af8eb6cfb64b3814ad397bd16c53aed05294e4fd6032da194c948",
 
-                "8665ed94e55105b817fd8d66b465b74e25970b6f2c2546e0e5193ccc5dcc0a85"
-                "17c1bd166efd5189b9a1224e682eb8f59143ba3c1a01a781f117f912c65cde31"
-                "8b696ab6d15dd18b2f5941d5f2a3fa35ee87662dbd3d15ebabe24f941d79c98a"
-                "294de1b90a41fad3a94aa1d543f79e98a64378585dbb631a537a78e640d9811d",
+                "283838bf54881fa969eafdfb367d37fc665256a6461f5c431e9237f7231a78d2"
+                "b5c4652d11cf64c18f7e642c1e5cc43fa9b588d061290ce080952b83fa87d6b0"
+                "0d41d1a254941bc2219e8a82b9a1163d5d6ec8662b0d4da2b8e57d0747139241"
+                "9573ec756cfb1d0b397961303df04f7527b2a8afc17fd933a0ccdf3aad67b648",
 
-                "1a156f688bd1a6ebcc2d9e2298434ea76a2fa1e5f5e6584ad5911994257a43d9"
-                "1d411d4665176585354fab810566ed8d51b416b8a1fae1942efd8b53fd5d8917"
-                "4178d5c93dbaee4dbdf979de0a3c876929e2d10b5981d35dc6867863b8cc5d12"
-                "4eb90a2ce051b96697c131a3b6a9e55c17f18a012540b7bb3c6efa431af2bdf7",
+                "1f6e1db9795c0713eafbf01ed247fde0dfb6b588a61666cfe53da17d11754180"
+                "372b3938955430b8542738c156fbad1f61af0c8f5d0db5d948a26c8ac4232c29"
+                "4fd1a8a992c1fa371a0b367f78a9b0fc43bf334d3fcc6183521b2d467e663a88"
+                "eca075c45cc264b20d6794d01ed69265214128f7739e3d87952ba28264697dc8",
 
                 // Round 1
-                "3f7ad16d61adf41be11a97ed8bcaa3d45ea24b89271e649e0366b1cfc3911ba9"
-                "8b97c740947bfcf6e1a4e75bad1022338f4641c15e658c38bcefcca5f8528473"
-                "c733cf1ba03d5c549d407b9c148d60f04eb3fc5f4d8165823437061366d58a69"
-                "8ad688dbac9af95ac50f3ac81c89e9159efa4bcf07a53a19d4af046cd3a14cd1",
+                "c544fd4f5682e3e07b6d879f9b39fbab023de73c09ba9e5d4479cbd9f37d5b91"
+                "1b507d20198dbbc2b280f1b38bede3c76ff63e0b878858025c2dd90c39a629b0"
+                "0015cc2738bf8508e7dd7abd7a571565eb746c13ef78cef1c3d71c34963b371f"
+                "9dd6a39a6e65a651113b91c47e2f19eaae37f1fb505577cb00b170afe230bb3f",
 
-                "09338311125e2a33b36fade2284733cedbec80f381a6447457a0eb7e59485c71"
-                "5594d44da4a8ac43e953c4066d1a649862b4cf00cbe858c9b973079507b2828c"
-                "e86464462aaa595ce09af72b5cd63cff77003a30382204df6b31b2b1d18615e1"
-                "e39699327e78a0bc0d6a26a7576b256d0133061a4d342483e37357cce5ab00d1",
+                "3e9ac16aed5714a7cd0cbfa932bd4cb859fe70db2f788538312163759a6e3a32"
+                "d6e578fb9d44e4e5626b4d799bc3c4b22f02b3f369f76a7481ee334afc79b816"
+                "7ae5871e306b572c13dddfe6035915e23d2849de1ee0ebb9239df3645f23042c"
+                "9882b6d8019242f30f586bd06e1545be0b6bc74062a32384f02759ba24c5193f",
 
-                "cb04f36d5c2a01df7e3025c46db4ce5864e0261298cc1a6aa762a011db7333ab"
-                "d178d14447b33371ffb26bc92ae283ad5e284d64533c99b11aa8e8e36f594373"
-                "f7572b1522cf7796d40786827eeb0064e33159809a00bc4d070906243348aa95"
-                "06e95c8174ac323aec948cd6460d57b255b9e1e8a6e5333400a4a057835c386b",
+                "78284203588564230c921531325fbf745919d657db15de449de259f39dbe2c81"
+                "4c1e0fc1ee30d023ed0b9ae570a924146b406a623d7a02233fb901dfe59a79f7"
+                "4587c72f2162fc636ef332a33aa716b8386a84ebb227694afe57fb2f6b59bab3"
+                "b6f0d8c4c32c4d6be0c56bf39bb8047813e53e7582dd6e7998331ee6e4cdbd49",
 
                 // Round 2
-                "6326630e8224a22e649c6ea9c01c0fcc527989e9314d228157f0e161a0ae8e55"
-                "ee014c2aa373041cc4b596139a227e8b815857b35c9715e74fbfebef7c5df054"
-                "15decc0d044d3a60206041166169cf65671151ac9b9ddea6bdd096b5649f1fdf"
-                "c720ca9ee44d56da4d10e5de7346eceef240714469e54cd2b575990f42b73856",
+                "0cc2d918700db7e17218ac0fa6e214dde3f67e0be4b100c5a5284dcb4fb33bd0"
+                "fba2dcf09dd566d866ff90e879d1b2a9431bcddaf7e6754c35a02cb2f57768fb"
+                "68a57a1ffb79dcc03a1110c1bed1dd302522ab92a5be6f54d7b9b6f59856090c"
+                "e1c6c940ada900e46f548b85b39a4f10739a95e8792e75137d11e4a2f99f841b",
 
-                "e94b438575f8f04267f764fa25a54978077eecc711252cc8649062248a82d660"
-                "d1b2e6789554534d57fc449a50e7c5e3be031db3d4b3b21ef3ba4725dc6be4ae"
-                "a3206baf0eea81c69bfddd88ed2eed597ccddf9ef0cc04a73cb385840e2ee185"
-                "3f49597c0688b2ca5ddb8f6b0b456a36b885d47de22c73f71e7e211a6dcb2856",
+                "2bab303aa44f274d4f64d51a3002dc0baadf078f613d52ec005e9cdf4fdebd5a"
+                "37a6ecc976920c256e2b1383f7f0ade8e24bd7977e6490d8ce459cfdc8472ddc"
+                "eed1dabd6538486af09920ad2fd92698bd659700404d1dd2173dc53e5798d1b9"
+                "4fae84271c9e96a6bd369b4a85fe7e6aeb2a8e21bbcc009c4f51036a23c6761b",
 
-                "d404c750c60eb8a7249e6a44360378b26b9b8f75e31a7ddb6bbe9085077e85cb"
-                "56880e2ca5674b6059853c1ef0fa4364f82578c5fced5984e754a31ef78a4dba"
-                "dd2188e1cc1d7c49e6472ee40662cd203fb381ecfd28cae2dce9d4734282ea25"
-                "9a57d611c8537cdf7eb2ae2eaf5d646bd1f385b3256d492cb395b20bf7edf045",
+                "3d65962f36523e98649efe005a57d5d80376374f8f2600923d98d9c5766ab9ce"
+                "dc40bd3045654a17a4ebab25071a23279b21906ebdee4b001bd21c20a64f8364"
+                "7eda8ee25ebbc89cdea630ccbd4ddc0bec3a9c1de8517efddf48c9612baa6ad7"
+                "844f27adf06a132a4dc63897f72dd1ecf0d12bdfae9985474f9cbdad0c4f0297",
             };
 
             static const char* const k_rgszEncB1[] =
             {
                 // Round 0
-                "75c8befa0ada93706ce5b612fd57fea44aba47d65dfad2a00eaa0d9745c6eb3c"
-                "23e8b473b5044e7e22ba9c8794afb968bfcf3f9bd358541b933cdb5e06b8c7af"
-                "67f8637ad1b78a32aadea25b1630e777383a95cdef01ce721ae3fb33f7fd888b"
-                "85e23d8ef82d03a27d0e2515f00f6fbdd5e07bf01a8cb2293c0393b18292b5f7",
+                "551954147415ba269e42ccd7d58ce506a62e03ffd6a6d05e2f743be454ae2999"
+                "f9204782bdf53aa92e4384029fbe17435670af0c74647503c4bd21b7a5424768"
+                "0095e93d30f999954b1d7f242b260bd9db07a99b272146b955e610ea7e603314"
+                "1608107b215a307ca5b8ff2156c22a73f706db281071b9874922414f8c9709f3",
 
-                "62ad7eca60768d13ef8face13b3d86b412fd477162be1ea09a6928a2f32fffbd"
-                "0263db1d4e12c29e6fc32819ffe11abedb57d10992bde3548715da4f7805ff20"
-                "acb71d86ef1550cd8042f3a3557061af3e8badae06eea2839464663e80eea5db"
-                "7e26f74bcae1190a4bbd645c4e48326cc26e9fcb545fd53947f76f951c7349f7",
+                "0a814ffd02ff8541a247325f6bc1aaeeb22404306805f281cf07540dcf0983d1"
+                "5349f9fa6abf00cf101796404b72e5422b67a5af5265b215ab2564a926f38c4d"
+                "1fb5c2694a2c89e0876f5f3f92f1dc827bc29bb92fa2dde49089b24051e38fa6"
+                "b451e258aaa60181d2574d55d460c7f2e9bdc01e1736716df88377b034a5bcf3",
 
-                "adbd80197e641d63d180c39e022f9aae471c156fda8f576e3b284e9f921aade3"
-                "db1d7eff6f20b7bdca5094498619f3134bc2cd86483e5512a273f378bdfddb61"
-                "0ab48709bee12669ffdba5cbbe4e8b066c71701242ef4fa3326254f7a0284b54"
-                "5ceee162eff776a2d5ff66ca1e3de164ac60ac47ee05f75f39c2af15838d3e95",
+                "7b402c81fffa81e36b4af3403fa617f396af42723634bd51322b8902bc154fd4"
+                "8fcfb2e041ab715283601ea9dd5458571fc2b2fdaaa251040783256d2fb5494be"
+                "2cf00260d4d9b6acf1789d292f2818c67a6e9bf4785b9c124558769c0d1304d6"
+                "809b453f1650a90a5f2c7a56ff86482e5e410c2055ff901b05feeaadcb277a2",
 
                 // Round 1
-                "da226a300cc91ea014cae86f1c1b658b893f24c8ec916cc3ee8b8fa899045922"
-                "3d2cbeb437e28c3ff64db1f51779f523f5878b4458a4eb69824d2082ab7f04cc"
-                "8d1140bdb94565ce416a64f8dbca5ba95919b8ad37353c5973829ed3ab5b94aa"
-                "e48f4863957e70c0f62a0767bdcd7b7317d490cfe4d98136917e6c8408e2727c",
+                "7e2e78107ced389180b86c6f4e6f07e90c477bef84191f8400b53e4e35d24779"
+                "1bedbd85b27a5044e5a9887ce20946643cdd0840ac8a03f3c7e39304c966036d"
+                "f636e2aaeeb931a2b914216c4acefb370f71ca5c80cd36e096a60a65c17a5874"
+                "e1d72702df088550ef4ffe689546c29f238f27656982513c2c76eb452b094b92",
 
-                "0d2e75e865a1740c670d8b52fafd4eb56c3c25527175bd186f1e865114fdf190"
-                "8c22cf7c54c1c21bd4484409f96cee0e671ba3955a459cef67e45a848c6c9f38"
-                "c4c52d3737466eb6d29fa15c5a2e5e28ba5aeb5cca0b43ed293fb4eb97a80b44"
-                "aee98cf1091ed8776d666b35cb2fdfd60d7c2c8852927fa7d7a02754eacfdc7c",
+                "d6f79928fec461eda421a99d3064172c3b219bfda5a4bf553569b6e85c74a1b0"
+                "e40c640f561bca82551d9f7d2ef268e608b418c94d015fc1e2edd2e53a184ba6"
+                "05c8ec6746571bab3a495dff49b2f1e904dc2fa6fb7a8742b9654a84c02aa889"
+                "118f25df0a7adcd3005fb5b87afabe18d98e213bca9c72e3bbdd49f0636f6a92",
 
-                "eb4597d8ae6b2d22a3d2481b8cfd6f5c25ea46275a0d1b7cfa44cb2c5aee2e9c"
-                "447c759fd438c590096e29dc3709140c6dc2b64e2fba5a6c43cfa18c663c675e"
-                "77b567957552e91ef9cf0b880e545acad6522ec19f67845cdf0d52a01886f1ef"
-                "35a86c71378ca1517ff1b4e8bdfd1e3f8b65c4d70b6c7c92a70d28e4ed74eb54",
+                "048457d3c40ff72a3046927dff7a1d189fc9e6f29c638ec0a90865fe6ac1997a"
+                "a85c5fabede2724dddfa3be587b6df5f05dc3b2817a48f9b69a1ede3fbc80c2e"
+                "2535ca3ae8a62f5682ca1b0049bf554bb489d91b2161a66421b83a6721b0fdb5"
+                "a57411e4b201d6b96f18be1849bbd2e9684255eca49d64dcf05d2c0af14a497a",
 
                 // Round 2
-                "ac2c0a9f5149066138e1d4ffe621165bf10dae7697ca7e620bc5276f5f8e36aa"
-                "0cac13a4426e61c54b135753e993d488bc7ee1b253be7b56d4c6d8eaea74c4df"
-                "87dd19f1a6f6944cfdc1baf64c2b942b1cfbceb91d1bf687fc7e299f0ae11f8d"
-                "9561e8ccc0fd47b13b66a8259728b15d4b90ebdf252aeab2231fa937244752b1",
+                "70aa11a7dd9c0dc3ef35d44436faf1c06d5566a2c75216c2d3732312de3ece33"
+                "c85cd6bb467dcbf1da1b7cb12b06e6a3df002d3bbda542e762b906a75f095824"
+                "95cbf9bd39906d8f03fb6b1255aa5e2cdb11cb8f34e86b87beeeab10dab4ddd3"
+                "7a25f419500297cb00bab787680d452526f2b7f632dc467d90000734cbd44748",
 
-                "6c13bedc27d486776316a505394a343bdb3771f6eb5d5634225e6875ebe58192"
-                "32f0f83fb0381821d657fe1e82822e6d401a41c92275e7cd49e42ac11aa556a7"
-                "ca4717a5504f33ab135bcf77f2f503e298b94dde207f698d69ba7fa310ebacd5"
-                "b329c79404df7ca9dbdf04218c98b5e4f0925081f231ee5dd6e47a099528b7b1",
+                "3b560ce1112505701234843af8e142cc8ae1373716b9aa844d88f45c8e4d54c7"
+                "af0c3aefece6516f7a6ba391123d4f3dcc46e8b1573df57317ac8a6f7fedea76"
+                "ac0da0c8ffb20bf31c65ff736289c4f1609c9d12a9d2082c84e12ac2df2f00dd"
+                "734768de250833bcc18f72230047e227b06741582614a4bb0d654ce45b2ebe48",
 
-                "4d75107cb30417f04113572132e522de71954f7a2a161a9239fe8c50222e13e7"
-                "d53fbe56d6a74792043369b7a51eeb77db18ab349898f2db6928cf1adf374003"
-                "a93b49c95d05295e82f8ac816db0b920e4f6f5385b63c177b56cf2e4346894cd"
-                "21eb82eb50c7d475ee817fdc564adfbaa527cad67fa5b1315df0e2e48d86a309",
+                "60c2b2bc25ef562ff8ff489173086beda3b13d3d145b67df84cce111be730c00"
+                "008ef5f37017a4576547586f08f4de8fac9c8ae1421247378854acbba90d0c12"
+                "684d517f5c769dec6f260bc162aa84ea46ddb0e6340512e1e1231cc841c73772"
+                "164d73af893d3b842e27e2e8650d8af14f2c7aa0b93a3a33e4ffcc25c42a4cd2",
             };
 
             // Pointers to per-block expected data and permutations
@@ -733,43 +733,43 @@ namespace CryptoPadLibTests
             static const char* const k_rgszDecRfwdB0[] =
             {
                 // Round 2
-                "6326630e8224a22e649c6ea9c01c0fcc527989e9314d228157f0e161a0ae8e55"
-                "ee014c2aa373041cc4b596139a227e8b815857b35c9715e74fbfebef7c5df054"
-                "15decc0d044d3a60206041166169cf65671151ac9b9ddea6bdd096b5649f1fdf"
-                "c720ca9ee44d56da4d10e5de7346eceef240714469e54cd2b575990f42b75e6b",
+                "0cc2d918700db7e17218ac0fa6e214dde3f67e0be4b100c5a5284dcb4fb33bd0"
+                "fba2dcf09dd566d866ff90e879d1b2a9431bcddaf7e6754c35a02cb2f57768fb"
+                "68a57a1ffb79dcc03a1110c1bed1dd302522ab92a5be6f54d7b9b6f59856090c"
+                "e1c6c940ada900e46f548b85b39a4f10739a95e8792e75137d11e4a2f99f9c49",
 
                 // Round 1
-                "3f7ad16d61adf41be11a97ed8bcaa3d45ea24b89271e649e0366b1cfc3911ba9"
-                "8b97c740947bfcf6e1a4e75bad1022338f4641c15e658c38bcefcca5f8528473"
-                "c733cf1ba03d5c549d407b9c148d60f04eb3fc5f4d8165823437061366d58a69"
-                "8ad688dbac9af95ac50f3ac81c89e9159efa4bcf07a53a19d4af046cd3a122f7",
+                "c544fd4f5682e3e07b6d879f9b39fbab023de73c09ba9e5d4479cbd9f37d5b91"
+                "1b507d20198dbbc2b280f1b38bede3c76ff63e0b878858025c2dd90c39a629b0"
+                "0015cc2738bf8508e7dd7abd7a571565eb746c13ef78cef1c3d71c34963b371f"
+                "9dd6a39a6e65a651113b91c47e2f19eaae37f1fb505577cb00b170afe23021c8",
 
                 // Round 0
-                "3b2ebb68086f09393dcc861859f7ef1707470f0029ad4dda36e01ef0530cee80"
-                "79e5e8eb58279576b2dd9e5fc067c3ccb972bd918bbabdf766408be61e12a998"
-                "ebd436ea91f203bced1f75c16baf79824ecf540726e8c728c9c08f3336cb83a2"
-                "da266447d5648e0b90dcb3292e745ef00a811df1944b3fe1a5a709611f777f7c",
+                "b88bfcdd33cec4799c6729d36cf6c0c14f80f18db0821008aac2ad7eb696a3ec"
+                "c420a06790c89cdab8c2f0fec5d35769799eaee07e9c1ddb48943182c2bfaa3f"
+                "06fad0132681f426a5e92f1a73c0bfd92ba094b3e91f2c0b9cf05d7b687b3217"
+                "319ff5aa3e1af8eb6cfb64b3814ad397bd16c53aed05294e4fd6032da194857c",
             };
 
             static const char* const k_rgszDecRfwdB1[] =
             {
                 // Round 2
-                "ac2c0a9f5149066138e1d4ffe621165bf10dae7697ca7e620bc5276f5f8e36aa"
-                "0cac13a4426e61c54b135753e993d488bc7ee1b253be7b56d4c6d8eaea74c4df"
-                "87dd19f1a6f6944cfdc1baf64c2b942b1cfbceb91d1bf687fc7e299f0ae11f8d"
-                "9561e8ccc0fd47b13b66a8259728b15d4b90ebdf252aeab2231fa93724472054",
+                "70aa11a7dd9c0dc3ef35d44436faf1c06d5566a2c75216c2d3732312de3ece33"
+                "c85cd6bb467dcbf1da1b7cb12b06e6a3df002d3bbda542e762b906a75f095824"
+                "95cbf9bd39906d8f03fb6b1255aa5e2cdb11cb8f34e86b87beeeab10dab4ddd3"
+                "7a25f419500297cb00bab787680d452526f2b7f632dc467d90000734cbd4087a",
 
                 // Round 1
-                "da226a300cc91ea014cae86f1c1b658b893f24c8ec916cc3ee8b8fa899045922"
-                "3d2cbeb437e28c3ff64db1f51779f523f5878b4458a4eb69824d2082ab7f04cc"
-                "8d1140bdb94565ce416a64f8dbca5ba95919b8ad37353c5973829ed3ab5b94aa"
-                "e48f4863957e70c0f62a0767bdcd7b7317d490cfe4d98136917e6c8408e25195",
+                "7e2e78107ced389180b86c6f4e6f07e90c477bef84191f8400b53e4e35d24779"
+                "1bedbd85b27a5044e5a9887ce20946643cdd0840ac8a03f3c7e39304c966036d"
+                "f636e2aaeeb931a2b914216c4acefb370f71ca5c80cd36e096a60a65c17a5874"
+                "e1d72702df088550ef4ffe689546c29f238f27656982513c2c76eb452b0990a2",
 
                 // Round 0
-                "75c8befa0ada93706ce5b612fd57fea44aba47d65dfad2a00eaa0d9745c6eb3c"
-                "23e8b473b5044e7e22ba9c8794afb968bfcf3f9bd358541b933cdb5e06b8c7af"
-                "67f8637ad1b78a32aadea25b1630e777383a95cdef01ce721ae3fb33f7fd888b"
-                "85e23d8ef82d03a27d0e2515f00f6fbdd5e07bf01a8cb2293c0393b18292de7c",
+                "551954147415ba269e42ccd7d58ce506a62e03ffd6a6d05e2f743be454ae2999"
+                "f9204782bdf53aa92e4384029fbe17435670af0c74647503c4bd21b7a5424768"
+                "0095e93d30f999954b1d7f242b260bd9db07a99b272146b955e610ea7e603314"
+                "1608107b215a307ca5b8ff2156c22a73f706db281071b9874922414f8c97117c",
             };
 
             const char* const* rgszDecRfwd[] = { k_rgszDecRfwdB0, k_rgszDecRfwdB1 };
