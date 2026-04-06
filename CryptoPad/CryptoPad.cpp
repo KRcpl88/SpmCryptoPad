@@ -157,7 +157,7 @@ INT_PTR CALLBACK PasswordDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM 
     case WM_INITDIALOG:
         ::SetDlgItemTextW(hDlg, IDC_PASSWORD, szPassword);
         ::SendDlgItemMessageW(hDlg, IDC_PASSWORD, EM_LIMITTEXT, ARRAYSIZE(szPassword) - 1, 0);
-        ::CheckDlgButton(hDlg, IDC_ASCII, fAsciiPassword ? BST_CHECKED : BST_UNCHECKED);
+        ::CheckDlgButton(hDlg, IDC_ASCII_PASSWORD, fAsciiPassword ? BST_CHECKED : BST_UNCHECKED);
         return (INT_PTR)TRUE;
 
     case WM_COMMAND:
@@ -165,7 +165,7 @@ INT_PTR CALLBACK PasswordDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM 
         {
         case IDOK:
             ::GetDlgItemText(hDlg, IDC_PASSWORD, szPassword, ARRAYSIZE(szPassword) - 1);
-            fAsciiPassword = (::IsDlgButtonChecked(hDlg, IDC_ASCII) == BST_CHECKED);
+            fAsciiPassword = (::IsDlgButtonChecked(hDlg, IDC_ASCII_PASSWORD) == BST_CHECKED);
         case IDCANCEL:
             ::EndDialog(hDlg, LOWORD(wParam));
             return (INT_PTR)TRUE;

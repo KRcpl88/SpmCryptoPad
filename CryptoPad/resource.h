@@ -25,7 +25,7 @@
 #define IDD_SEARCH                      130
 #define IDC_TEXT                        1001
 #define IDC_NEXT                        1002
-#define IDC_ASCII                       1003
+#define IDC_ASCII_PASSWORD              1003
 #define IDC_STATIC                      -1
 
 // Next default values for new objects
