@@ -13,7 +13,7 @@ namespace CryptoPadLibTests
     {
         size_t cbKey = CSpmBlockCipher64::s_GetKeyWidth();
         unsigned char* pKey = nullptr;
-        ParsePassword(lpwszPassword, cbKey, &pKey);
+        ParsePasswordW(lpwszPassword, cbKey, &pKey);
         cipher.SetKeys(pKey, cbKey);
         delete[] pKey;
     }
@@ -32,7 +32,7 @@ namespace CryptoPadLibTests
     {
         size_t cbKey = CSimplePrng64::s_GetKeyWidth();
         unsigned char* pKey = nullptr;
-        ParsePassword(k_pwszDefaultPassword, cbKey, &pKey);
+        ParsePasswordW(k_pwszDefaultPassword, cbKey, &pKey);
         prng.SetKeys(pKey, cbKey);
         delete[] pKey;
     }

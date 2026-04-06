@@ -118,12 +118,48 @@ void GenNonce(__inout_bcount(k_cSpmBlockSizeBytes) BYTE* pNonce, __inout_z char*
     delete[] pBuf;
 }
 
-void ParsePassword(__in_z LPCWSTR pszPassword, __in size_t cbBin, __out_bcount(cbBin) unsigned char** ppBin)
+void ParsePasswordW(__in_z LPCWSTR pwszPassword, __in size_t cbBin, __out_bcount(cbBin) unsigned char** ppBin)
 {
     size_t i = 0;
     bool fFirstPass = true;
     bool fPasswordIncomplete = true;
-    LPCWSTR pszTemp = nullptr;
+    LPCWSTR pwszTemp = nullptr;
+
+    *ppBin = new unsigned char[cbBin];
+    ::memset(*ppBin, 0, cbBin);
+
+    pwszTemp = pwszPassword;
+
+    while (fFirstPass || ((*pwszTemp) && fPasswordIncomplete))
+    {
+        if ((*pwszTemp) == 0)
+        {
+            pwszTemp = pwszPassword;
+        }
+
+        *(reinterpret_cast<WCHAR*>(*ppBin + i)) += *pwszTemp;
+        ++pwszTemp;
+
+        if ((*pwszTemp) == 0)
+        {
+            fPasswordIncomplete = false;
+        }
+
+        i += sizeof(*pwszTemp);
+        if (i >= cbBin)
+        {
+            fFirstPass = false;
+            i = 0;
+        }
+    }
+}
+
+void ParsePasswordA(__in_z LPCSTR pszPassword, __in size_t cbBin, __out_bcount(cbBin) unsigned char** ppBin)
+{
+    size_t i = 0;
+    bool fFirstPass = true;
+    bool fPasswordIncomplete = true;
+    LPCSTR pszTemp = nullptr;
 
     *ppBin = new unsigned char[cbBin];
     ::memset(*ppBin, 0, cbBin);
@@ -137,7 +173,7 @@ void ParsePassword(__in_z LPCWSTR pszPassword, __in size_t cbBin, __out_bcount(c
             pszTemp = pszPassword;
         }
 
-        *(reinterpret_cast<WCHAR*>(*ppBin + i)) += *pszTemp;
+        *(*ppBin + i) += static_cast<unsigned char>(*pszTemp);
         ++pszTemp;
 
         if ((*pszTemp) == 0)

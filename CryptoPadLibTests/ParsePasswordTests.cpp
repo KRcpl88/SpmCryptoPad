@@ -15,7 +15,7 @@ namespace CryptoPadLibTests
             size_t cbKey = CSpmBlockCipher64::s_GetKeyWidth();
             unsigned char* pKey = nullptr;
 
-            ParsePassword(L"P@s$w0rd!", cbKey, &pKey);
+            ParsePasswordW(L"P@s$w0rd!", cbKey, &pKey);
 
             Assert::IsNotNull(pKey, L"ParsePassword should allocate a key buffer");
             delete[] pKey;
@@ -26,7 +26,7 @@ namespace CryptoPadLibTests
             size_t cbKey = CSpmBlockCipher64::s_GetKeyWidth();
             unsigned char* pKey = nullptr;
 
-            ParsePassword(L"P@s$w0rd!", cbKey, &pKey);
+            ParsePasswordW(L"P@s$w0rd!", cbKey, &pKey);
 
             bool fAllZero = true;
             for (size_t i = 0; i < cbKey; i++)
@@ -48,8 +48,8 @@ namespace CryptoPadLibTests
             unsigned char* pKey1 = nullptr;
             unsigned char* pKey2 = nullptr;
 
-            ParsePassword(L"P@s$w0rd!", cbKey, &pKey1);
-            ParsePassword(L"P@s$w0rd!", cbKey, &pKey2);
+            ParsePasswordW(L"P@s$w0rd!", cbKey, &pKey1);
+            ParsePasswordW(L"P@s$w0rd!", cbKey, &pKey2);
 
             bool fEqual = (::memcmp(pKey1, pKey2, cbKey) == 0);
 
@@ -76,8 +76,8 @@ namespace CryptoPadLibTests
             unsigned char* pKey1 = nullptr;
             unsigned char* pKey2 = nullptr;
 
-            ParsePassword(L"P@s$w0rd!", cbKey, &pKey1);
-            ParsePassword(L"Different!", cbKey, &pKey2);
+            ParsePasswordW(L"P@s$w0rd!", cbKey, &pKey1);
+            ParsePasswordW(L"Different!", cbKey, &pKey2);
 
             bool fEqual = (::memcmp(pKey1, pKey2, cbKey) == 0);
 
