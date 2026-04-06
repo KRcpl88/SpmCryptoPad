@@ -355,7 +355,7 @@ namespace CryptoPadLibTests
         {
             CSpmBlockCipher64 cipher1, cipher2;
             CryptoPadLibTests::InitCipher(cipher1);
-            CryptoPadLibTests::InitCipher(cipher2, L"Different!");
+            CryptoPadLibTests::InitCipher(cipher2, "Different!");
 
             unsigned char rgBlock1[k_cSpmBlockSizeBytes] = { 0 };
             unsigned char rgBlock2[k_cSpmBlockSizeBytes] = { 0 };
@@ -513,7 +513,7 @@ namespace CryptoPadLibTests
 
             // Decrypt with a different key
             CSpmBlockCipher64 cipherDec;
-            CryptoPadLibTests::InitCipher(cipherDec, L"Different!");
+            CryptoPadLibTests::InitCipher(cipherDec, "Different!");
             cipherDec.Decrypt(rgBlock, k_cSpmBlockSizeBytes);
 
             bool fEqual = (::memcmp(rgBlock, rgOriginal, k_cSpmBlockSizeBytes) == 0);
