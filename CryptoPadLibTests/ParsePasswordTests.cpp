@@ -70,6 +70,35 @@ namespace CryptoPadLibTests
             delete[] pKey2;
         }
 
+        TEST_METHOD(TestParsePasswordASamePasswordProducesSameKey)
+        {
+            size_t cbKey = CSpmBlockCipher64::s_GetKeyWidth();
+            unsigned char* pKey1 = nullptr;
+            unsigned char* pKey2 = nullptr;
+
+            ParsePasswordA("P@s$w0rd!", cbKey, &pKey1);
+            ParsePasswordA("P@s$w0rd!", cbKey, &pKey2);
+
+            bool fEqual = (::memcmp(pKey1, pKey2, cbKey) == 0);
+
+            Assert::IsTrue(fEqual, L"Same password should always produce the same key");
+
+            size_t cbExpectedKey = 0;
+            unsigned char* pExpectedKey = nullptr;
+            char rgExpectedKeyHex[] =
+                "5040732477307264215040732477307264215040732477307264215040732477";
+
+            HexToBin(rgExpectedKeyHex, 1, &cbExpectedKey, &pExpectedKey);
+            Assert::IsTrue(cbExpectedKey == cbKey, L"Key should be correct width");
+
+            fEqual = (::memcmp(pKey1, pExpectedKey, cbExpectedKey) == 0);
+            Assert::IsTrue(fEqual, L"Same password should always produce the same key");
+
+            delete[] pKey1;
+            delete[] pKey2;
+            delete[] pExpectedKey;
+        }
+
         TEST_METHOD(TestParsePasswordDifferentPasswordsProduceDifferentKeys)
         {
             size_t cbKey = CSpmBlockCipher64::s_GetKeyWidth();
