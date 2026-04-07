@@ -59,6 +59,7 @@ namespace CryptoPadLibTests
 
             size_t cbExpectedKey = 0;
             unsigned char* pExpectedKey = NULL;
+            // ASCII-derived key for g_pszTestPassword ("P@s$w0rd!") via ParsePasswordA
             char rgExpectedKeyHex[] =
                 "5040732477307264215040732477307264215040732477307264215040732477";
 
