@@ -6,6 +6,8 @@ using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
 namespace CryptoPadLibTests
 {
+    extern const LPCSTR g_pszTestPassword;
+
     TEST_CLASS(FbcEncryptDecryptTests)
     {
     public:
@@ -41,7 +43,7 @@ namespace CryptoPadLibTests
 
             // Derive key from password
             cbKey = FBC_CRYPT::s_GetKeyWidth();
-            ParsePasswordA("TestPassword123!", cbKey, &pKey);
+            ParsePasswordA(g_pszTestPassword, cbKey, &pKey);
 
             // Encrypt
             ::FbcEncryptFile(szPlaintext, szCiphertext, pKey, cbKey);

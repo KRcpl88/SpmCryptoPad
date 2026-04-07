@@ -5,6 +5,8 @@ using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
 namespace CryptoPadLibTests
 {
+    const LPCSTR g_pszTestPassword = "P@s$w0rd!";
+
     TEST_MODULE_INITIALIZE(ModuleInitialize)
     {
         size_t cKey = 0;
