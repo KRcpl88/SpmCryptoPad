@@ -156,6 +156,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="FbcEncryptDecryptTests.cpp" />
     <ClCompile Include="GenNonceTests.cpp" />
     <ClCompile Include="CipherTests.cpp" />
     <ClCompile Include="ParsePasswordTests.cpp" />
