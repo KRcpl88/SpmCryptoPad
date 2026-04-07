@@ -6,6 +6,8 @@ using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
 namespace CryptoPadLibTests
 {
+    extern const LPCSTR g_pszTestPassword;
+
     TEST_CLASS(ParsePasswordTests)
     {
     public:
@@ -15,7 +17,7 @@ namespace CryptoPadLibTests
             size_t cbKey = CSpmBlockCipher64::s_GetKeyWidth();
             unsigned char* pKey = nullptr;
 
-            ParsePasswordW(L"P@s$w0rd!", cbKey, &pKey);
+            ParsePasswordA(g_pszTestPassword, cbKey, &pKey);
 
             Assert::IsNotNull(pKey, L"ParsePassword should allocate a key buffer");
             delete[] pKey;
@@ -26,7 +28,7 @@ namespace CryptoPadLibTests
             size_t cbKey = CSpmBlockCipher64::s_GetKeyWidth();
             unsigned char* pKey = nullptr;
 
-            ParsePasswordW(L"P@s$w0rd!", cbKey, &pKey);
+            ParsePasswordA(g_pszTestPassword, cbKey, &pKey);
 
             bool fAllZero = true;
             for (size_t i = 0; i < cbKey; i++)
@@ -48,8 +50,8 @@ namespace CryptoPadLibTests
             unsigned char* pKey1 = nullptr;
             unsigned char* pKey2 = nullptr;
 
-            ParsePasswordW(L"P@s$w0rd!", cbKey, &pKey1);
-            ParsePasswordW(L"P@s$w0rd!", cbKey, &pKey2);
+            ParsePasswordA(g_pszTestPassword, cbKey, &pKey1);
+            ParsePasswordA(g_pszTestPassword, cbKey, &pKey2);
 
             bool fEqual = (::memcmp(pKey1, pKey2, cbKey) == 0);
 
@@ -57,8 +59,9 @@ namespace CryptoPadLibTests
 
             size_t cbExpectedKey = 0;
             unsigned char* pExpectedKey = NULL;
+            // ASCII-derived key for g_pszTestPassword ("P@s$w0rd!") via ParsePasswordA
             char rgExpectedKeyHex[] =
-                "5000400073002400770030007200640021005000400073002400770030007200";
+                "5040732477307264215040732477307264215040732477307264215040732477";
 
             HexToBin(rgExpectedKeyHex, 1, &cbExpectedKey, &pExpectedKey);
             Assert::IsTrue(cbExpectedKey == cbKey, L"Key should be correct width");
@@ -76,8 +79,8 @@ namespace CryptoPadLibTests
             unsigned char* pKey1 = nullptr;
             unsigned char* pKey2 = nullptr;
 
-            ParsePasswordA("P@s$w0rd!", cbKey, &pKey1);
-            ParsePasswordA("P@s$w0rd!", cbKey, &pKey2);
+            ParsePasswordA(g_pszTestPassword, cbKey, &pKey1);
+            ParsePasswordA(g_pszTestPassword, cbKey, &pKey2);
 
             bool fEqual = (::memcmp(pKey1, pKey2, cbKey) == 0);
 
@@ -105,7 +108,7 @@ namespace CryptoPadLibTests
             unsigned char* pKey1 = nullptr;
             unsigned char* pKey2 = nullptr;
 
-            ParsePasswordW(L"P@s$w0rd!", cbKey, &pKey1);
+            ParsePasswordA(g_pszTestPassword, cbKey, &pKey1);
             ParsePasswordW(L"Different!", cbKey, &pKey2);
 
             bool fEqual = (::memcmp(pKey1, pKey2, cbKey) == 0);
