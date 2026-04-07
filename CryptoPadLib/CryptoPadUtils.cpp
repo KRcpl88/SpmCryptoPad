@@ -135,7 +135,7 @@ void ApplyNonce(__inout_bcount(k_cSpmBlockSizeBytes) BYTE* pNonce, __in_bcount(c
     pCryptor->SetKeys(rgTemp, cKey);
 }
 
-void FbcProcessFile(__in HANDLE hFileIn, __in HANDLE hFileOut, __in ULONGLONG cbFileSize, __inout FBC_CRYPT* pCyptor, __in EFileCryptProcess eFileCryptProcess)
+void FbcProcessFile(__in HANDLE hFileIn, __in HANDLE hFileOut, __in ULONGLONG cbFileSize, __inout FBC_CRYPT* pCryptor, __in EFileCryptProcess eFileCryptProcess)
 {
     unsigned char rgBuf[0x20000] = { 0 };
     DWORD dwBytesRead = 0;
@@ -160,11 +160,11 @@ void FbcProcessFile(__in HANDLE hFileIn, __in HANDLE hFileOut, __in ULONGLONG cb
             switch (eFileCryptProcess)
             {
             case EFCP_Encrypt:
-                pCyptor->Encrypt(rgBuf, cbBlockAlignedBytesRead);
+                pCryptor->Encrypt(rgBuf, cbBlockAlignedBytesRead);
                 cbBytesToWrite = cbBlockAlignedBytesRead;
                 break;
             case EFCP_Decrypt:
-                pCyptor->Decrypt(rgBuf, cbBlockAlignedBytesRead);
+                pCryptor->Decrypt(rgBuf, cbBlockAlignedBytesRead);
                 cbBytesToWrite = (DWORD)(min((ULONGLONG)dwBytesRead, cbFileSize - ullTotalBytes));
                 break;
             }
