@@ -78,7 +78,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
     int nResult = 0;
     int cArgs = 0;
-    LPWSTR* rgArgs = nullptr;
+    LPWSTR* ppArgs = nullptr;
     char szCodebook[33] = "b6a4c072764a2233db9c23b0bc79c143";
     char szArgCodebook[33] = { 0 };
     HEADLESS_OP eOp = NoOp;
@@ -88,13 +88,13 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     ::LoadStringW(hInstance, IDS_CRYPTOPAD, szWindowClass, MAX_LOADSTRING);
     ::MyRegisterClass(hInstance);
 
-    rgArgs = ::CommandLineToArgvW(::GetCommandLineW(), &cArgs);
+    ppArgs = ::CommandLineToArgvW(::GetCommandLineW(), &cArgs);
 
-    if (rgArgs != nullptr && cArgs >= 2)
+    if (ppArgs != nullptr && cArgs >= 2)
     {
-        if (cArgs >= 5 && ::IsHexStringW(rgArgs[4], 32))
+        if (cArgs >= 5 && ::IsHexStringW(ppArgs[4], 32))
         {
-            if (::WideCharToMultiByte(CP_UTF8, 0, rgArgs[4], -1, szArgCodebook, ARRAYSIZE(szArgCodebook), nullptr, nullptr) != 33)
+            if (::WideCharToMultiByte(CP_UTF8, 0, ppArgs[4], -1, szArgCodebook, ARRAYSIZE(szArgCodebook), nullptr, nullptr) != 33)
             {
                 ::MessageBoxW(nullptr, L"Invalid codebook argument", L"Argument Error", MB_OK | MB_ICONERROR);
                 nResult = 1;
@@ -107,7 +107,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
             ::InitCodebook(szCodebook);
         }
 
-        switch (rgArgs[1][0])
+        switch (ppArgs[1][0])
         {
         case L'E':
         case L'e':
@@ -133,11 +133,11 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
         if (eOp == Encrypt)
         {
-            ::EncryptFile(rgArgs[2], rgArgs[3]);
+            ::EncryptFile(ppArgs[2], ppArgs[3]);
         }
         else
         {
-            ::DecryptFile(rgArgs[2], rgArgs[3]);
+            ::DecryptFile(ppArgs[2], ppArgs[3]);
         }
     }
     else
@@ -151,9 +151,9 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     }
 
 Error:
-    if (rgArgs != nullptr)
+    if (ppArgs != nullptr)
     {
-        ::LocalFree(rgArgs);
+        ::LocalFree(ppArgs);
     }
     return nResult;
 }
