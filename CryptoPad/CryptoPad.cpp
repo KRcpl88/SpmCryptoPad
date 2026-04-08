@@ -85,9 +85,16 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
     if (rgArgs != nullptr && cArgs >= 2)
     {
-        if ((rgArgs[1][0] == L'E' || rgArgs[1][0] == L'D') && rgArgs[1][1] == L'\0' && cArgs >= 4)
+        switch (rgArgs[1][0])
         {
-            // Headless encrypt/decrypt: CryptoPad.exe E|D <filename> <password> [<16-byte-hex-codebook>]
+        case L'E':
+        case L'e':
+            if (cArgs < 4)
+            {
+                ::MessageBoxW(nullptr, L"Usage: CryptoPad.exe E <filename> <password> [<codebook>]", L"Argument Error", MB_OK | MB_ICONERROR);
+                ::LocalFree(rgArgs);
+                return 1;
+            }
             fHeadless = true;
             if (cArgs >= 5 && IsHexStringW(rgArgs[4], 32))
             {
@@ -103,30 +110,38 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
             {
                 ::InitCodebook(szCodebook);
             }
+            ::EncryptFile(rgArgs[2], rgArgs[3]);
+            break;
 
-            if (rgArgs[1][0] == L'E')
+        case L'D':
+        case L'd':
+            if (cArgs < 4)
             {
-                ::EncryptFile(rgArgs[2], rgArgs[3]);
-            }
-            else
-            {
-                ::DecryptFile(rgArgs[2], rgArgs[3]);
-            }
-        }
-        else if (IsHexStringW(rgArgs[1], 32))
-        {
-            // First arg is a 16-byte hex codebook: CryptoPad.exe <16-byte-hex-codebook>
-            if (::WideCharToMultiByte(CP_UTF8, 0, rgArgs[1], -1, szArgCodebook, ARRAYSIZE(szArgCodebook), nullptr, nullptr) != 33)
-            {
-                ::MessageBoxW(nullptr, L"Invalid codebook argument", L"Argument Error", MB_OK | MB_ICONERROR);
+                ::MessageBoxW(nullptr, L"Usage: CryptoPad.exe D <filename> <password> [<codebook>]", L"Argument Error", MB_OK | MB_ICONERROR);
                 ::LocalFree(rgArgs);
                 return 1;
             }
-            ::InitCodebook(szArgCodebook);
-        }
-        else
-        {
-            ::InitCodebook(szCodebook);
+            fHeadless = true;
+            if (cArgs >= 5 && IsHexStringW(rgArgs[4], 32))
+            {
+                if (::WideCharToMultiByte(CP_UTF8, 0, rgArgs[4], -1, szArgCodebook, ARRAYSIZE(szArgCodebook), nullptr, nullptr) != 33)
+                {
+                    ::MessageBoxW(nullptr, L"Invalid codebook argument", L"Argument Error", MB_OK | MB_ICONERROR);
+                    ::LocalFree(rgArgs);
+                    return 1;
+                }
+                ::InitCodebook(szArgCodebook);
+            }
+            else
+            {
+                ::InitCodebook(szCodebook);
+            }
+            ::DecryptFile(rgArgs[2], rgArgs[3]);
+            break;
+
+        default:
+            ::LocalFree(rgArgs);
+            return 1;
         }
     }
     else
