@@ -23,6 +23,8 @@ ATOM                MyRegisterClass(HINSTANCE hInstance);
 BOOL                Run(HINSTANCE, int);
 LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK    AboutDlgProc(HWND, UINT, WPARAM, LPARAM);
+void                EncryptFile(__in_z LPCWSTR pwszFilename, __in_z LPCWSTR pwszPassword);
+void                DecryptFile(__in_z LPCWSTR pwszFilename, __in_z LPCWSTR pwszPassword);
 
 
 void InitCodebook(char* pKeyData)
@@ -42,6 +44,29 @@ void InitCodebook(char* pKeyData)
 #endif
 }
 
+static bool IsHexStringW(__in_z LPCWSTR pwszArg, __in size_t cchExpected)
+{
+    bool fResult = false;
+
+    if (::wcslen(pwszArg) != cchExpected)
+    {
+        goto Error;
+    }
+    for (size_t i = 0; i < cchExpected; ++i)
+    {
+        WCHAR wc = pwszArg[i];
+        if (!((wc >= L'0' && wc <= L'9') || (wc >= L'a' && wc <= L'f') || (wc >= L'A' && wc <= L'F')))
+        {
+            goto Error;
+        }
+    }
+    fResult = true;
+
+Error:
+    return fResult;
+}
+
+enum HEADLESS_OP { NoOp, Encrypt, Decrypt };
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                      _In_opt_ HINSTANCE hPrevInstance,
@@ -51,12 +76,86 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     UNREFERENCED_PARAMETER(hPrevInstance);
     UNREFERENCED_PARAMETER(lpCmdLine);
 
+    int nResult = 0;
+    int cArgs = 0;
+    LPWSTR* ppArgs = nullptr;
+    char rgCodebook[33] = "b6a4c072764a2233db9c23b0bc79c143";
+    char rgArgCodebook[33] = { 0 };
+    HEADLESS_OP eOp = NoOp;
+
     // Initialize global strings
     ::LoadStringW(hInstance, IDS_APP_TITLE, szTitle, MAX_LOADSTRING);
     ::LoadStringW(hInstance, IDS_CRYPTOPAD, szWindowClass, MAX_LOADSTRING);
     ::MyRegisterClass(hInstance);
 
-    return ::Run(hInstance, nCmdShow);
+    ppArgs = ::CommandLineToArgvW(::GetCommandLineW(), &cArgs);
+
+    if (ppArgs != nullptr && cArgs >= 2)
+    {
+        if (cArgs >= 5 && ::IsHexStringW(ppArgs[4], 32))
+        {
+            if (::WideCharToMultiByte(CP_UTF8, 0, ppArgs[4], -1, rgArgCodebook, ARRAYSIZE(rgArgCodebook), nullptr, nullptr) != 33)
+            {
+                ::MessageBoxW(nullptr, L"Invalid codebook argument", L"Argument Error", MB_OK | MB_ICONERROR);
+                nResult = 1;
+                goto Error;
+            }
+            ::InitCodebook(rgArgCodebook);
+        }
+        else
+        {
+            ::InitCodebook(rgCodebook);
+        }
+
+        switch (ppArgs[1][0])
+        {
+        case L'E':
+        case L'e':
+            eOp = Encrypt;
+            break;
+
+        case L'D':
+        case L'd':
+            eOp = Decrypt;
+            break;
+
+        default:
+            nResult = 1;
+            goto Error;
+        }
+
+        if (cArgs < 4)
+        {
+            ::MessageBoxW(nullptr, L"Usage: CryptoPad.exe <E|D> <filename> <password> [<codebook>]", L"Argument Error", MB_OK | MB_ICONERROR);
+            nResult = 1;
+            goto Error;
+        }
+
+        if (eOp == Encrypt)
+        {
+            ::EncryptFile(ppArgs[2], ppArgs[3]);
+        }
+        else
+        {
+            ::DecryptFile(ppArgs[2], ppArgs[3]);
+        }
+    }
+    else
+    {
+        ::InitCodebook(rgCodebook);
+    }
+
+    if (eOp == NoOp)
+    {
+        nResult = ::Run(hInstance, nCmdShow);
+    }
+
+Error:
+    if (ppArgs != nullptr)
+    {
+        ::LocalFree(ppArgs);
+    }
+    return nResult;
 }
 
 
@@ -99,12 +198,7 @@ ATOM MyRegisterClass(HINSTANCE hInstance)
 //
 BOOL Run(HINSTANCE hInstance, int nCmdShow)
 {
-    char szCodebook[33] = "b6a4c072764a2233db9c23b0bc79c143";
-
     hInst = hInstance; // Store instance handle in our global variable
-
-    // TBD load codebook from registry
-    ::InitCodebook(szCodebook);
 
     HWND hWnd = ::CreateWindowW(szWindowClass, szTitle, WS_OVERLAPPEDWINDOW,
         CW_USEDEFAULT, 0, CW_USEDEFAULT, 0, nullptr, nullptr, hInstance, nullptr);

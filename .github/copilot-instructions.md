@@ -91,6 +91,8 @@ Done:
     ::CloseHandle(hFile);
 ```
 
+The end `goto` label is always `Error:`. When there is only one label (no separate error-only block), use `Error:` — never `Done:` alone. When a function needs both an error-only block and a shared cleanup block, use `Error:` followed by `Done:`.
+
 Debug-only assertions use a custom `ASSERT` macro (defined in `framework.h`) that calls `DebugBreak()`. Compile-time checks use `C_ASSERT`.
 
 ### Includes and headers
