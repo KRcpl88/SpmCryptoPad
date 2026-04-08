@@ -79,8 +79,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     int nResult = 0;
     int cArgs = 0;
     LPWSTR* ppArgs = nullptr;
-    char szCodebook[33] = "b6a4c072764a2233db9c23b0bc79c143";
-    char szArgCodebook[33] = { 0 };
+    char rgCodebook[33] = "b6a4c072764a2233db9c23b0bc79c143";
+    char rgArgCodebook[33] = { 0 };
     HEADLESS_OP eOp = NoOp;
 
     // Initialize global strings
@@ -94,17 +94,17 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     {
         if (cArgs >= 5 && ::IsHexStringW(ppArgs[4], 32))
         {
-            if (::WideCharToMultiByte(CP_UTF8, 0, ppArgs[4], -1, szArgCodebook, ARRAYSIZE(szArgCodebook), nullptr, nullptr) != 33)
+            if (::WideCharToMultiByte(CP_UTF8, 0, ppArgs[4], -1, rgArgCodebook, ARRAYSIZE(rgArgCodebook), nullptr, nullptr) != 33)
             {
                 ::MessageBoxW(nullptr, L"Invalid codebook argument", L"Argument Error", MB_OK | MB_ICONERROR);
                 nResult = 1;
                 goto Error;
             }
-            ::InitCodebook(szArgCodebook);
+            ::InitCodebook(rgArgCodebook);
         }
         else
         {
-            ::InitCodebook(szCodebook);
+            ::InitCodebook(rgCodebook);
         }
 
         switch (ppArgs[1][0])
@@ -142,7 +142,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     }
     else
     {
-        ::InitCodebook(szCodebook);
+        ::InitCodebook(rgCodebook);
     }
 
     if (eOp == NoOp)
