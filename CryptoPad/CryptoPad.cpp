@@ -91,6 +91,21 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
     if (rgArgs != nullptr && cArgs >= 2)
     {
+        if (cArgs >= 5 && ::IsHexStringW(rgArgs[4], 32))
+        {
+            if (::WideCharToMultiByte(CP_UTF8, 0, rgArgs[4], -1, szArgCodebook, ARRAYSIZE(szArgCodebook), nullptr, nullptr) != 33)
+            {
+                ::MessageBoxW(nullptr, L"Invalid codebook argument", L"Argument Error", MB_OK | MB_ICONERROR);
+                nResult = 1;
+                goto Error;
+            }
+            ::InitCodebook(szArgCodebook);
+        }
+        else
+        {
+            ::InitCodebook(szCodebook);
+        }
+
         switch (rgArgs[1][0])
         {
         case L'E':
@@ -102,20 +117,6 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                 goto Error;
             }
             fHeadless = true;
-            if (cArgs >= 5 && ::IsHexStringW(rgArgs[4], 32))
-            {
-                if (::WideCharToMultiByte(CP_UTF8, 0, rgArgs[4], -1, szArgCodebook, ARRAYSIZE(szArgCodebook), nullptr, nullptr) != 33)
-                {
-                    ::MessageBoxW(nullptr, L"Invalid codebook argument", L"Argument Error", MB_OK | MB_ICONERROR);
-                    nResult = 1;
-                    goto Error;
-                }
-                ::InitCodebook(szArgCodebook);
-            }
-            else
-            {
-                ::InitCodebook(szCodebook);
-            }
             ::EncryptFile(rgArgs[2], rgArgs[3]);
             break;
 
@@ -128,20 +129,6 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                 goto Error;
             }
             fHeadless = true;
-            if (cArgs >= 5 && ::IsHexStringW(rgArgs[4], 32))
-            {
-                if (::WideCharToMultiByte(CP_UTF8, 0, rgArgs[4], -1, szArgCodebook, ARRAYSIZE(szArgCodebook), nullptr, nullptr) != 33)
-                {
-                    ::MessageBoxW(nullptr, L"Invalid codebook argument", L"Argument Error", MB_OK | MB_ICONERROR);
-                    nResult = 1;
-                    goto Error;
-                }
-                ::InitCodebook(szArgCodebook);
-            }
-            else
-            {
-                ::InitCodebook(szCodebook);
-            }
             ::DecryptFile(rgArgs[2], rgArgs[3]);
             break;
 
