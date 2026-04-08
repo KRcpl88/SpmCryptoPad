@@ -75,6 +75,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     UNREFERENCED_PARAMETER(hPrevInstance);
     UNREFERENCED_PARAMETER(lpCmdLine);
 
+    int nResult = 0;
     int cArgs = 0;
     LPWSTR* rgArgs = nullptr;
     char szCodebook[33] = "b6a4c072764a2233db9c23b0bc79c143";
@@ -97,8 +98,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
             if (cArgs < 4)
             {
                 ::MessageBoxW(nullptr, L"Usage: CryptoPad.exe E <filename> <password> [<codebook>]", L"Argument Error", MB_OK | MB_ICONERROR);
-                ::LocalFree(rgArgs);
-                return 1;
+                nResult = 1;
+                goto Done;
             }
             fHeadless = true;
             if (cArgs >= 5 && ::IsHexStringW(rgArgs[4], 32))
@@ -106,8 +107,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                 if (::WideCharToMultiByte(CP_UTF8, 0, rgArgs[4], -1, szArgCodebook, ARRAYSIZE(szArgCodebook), nullptr, nullptr) != 33)
                 {
                     ::MessageBoxW(nullptr, L"Invalid codebook argument", L"Argument Error", MB_OK | MB_ICONERROR);
-                    ::LocalFree(rgArgs);
-                    return 1;
+                    nResult = 1;
+                    goto Done;
                 }
                 ::InitCodebook(szArgCodebook);
             }
@@ -123,8 +124,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
             if (cArgs < 4)
             {
                 ::MessageBoxW(nullptr, L"Usage: CryptoPad.exe D <filename> <password> [<codebook>]", L"Argument Error", MB_OK | MB_ICONERROR);
-                ::LocalFree(rgArgs);
-                return 1;
+                nResult = 1;
+                goto Done;
             }
             fHeadless = true;
             if (cArgs >= 5 && ::IsHexStringW(rgArgs[4], 32))
@@ -132,8 +133,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                 if (::WideCharToMultiByte(CP_UTF8, 0, rgArgs[4], -1, szArgCodebook, ARRAYSIZE(szArgCodebook), nullptr, nullptr) != 33)
                 {
                     ::MessageBoxW(nullptr, L"Invalid codebook argument", L"Argument Error", MB_OK | MB_ICONERROR);
-                    ::LocalFree(rgArgs);
-                    return 1;
+                    nResult = 1;
+                    goto Done;
                 }
                 ::InitCodebook(szArgCodebook);
             }
@@ -145,8 +146,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
             break;
 
         default:
-            ::LocalFree(rgArgs);
-            return 1;
+            nResult = 1;
+            goto Done;
         }
     }
     else
@@ -154,17 +155,17 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
         ::InitCodebook(szCodebook);
     }
 
+    if (!fHeadless)
+    {
+        nResult = ::Run(hInstance, nCmdShow);
+    }
+
+Done:
     if (rgArgs != nullptr)
     {
         ::LocalFree(rgArgs);
     }
-
-    if (fHeadless)
-    {
-        return 0;
-    }
-
-    return ::Run(hInstance, nCmdShow);
+    return nResult;
 }
 
 
