@@ -23,6 +23,8 @@ ATOM                MyRegisterClass(HINSTANCE hInstance);
 BOOL                Run(HINSTANCE, int);
 LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK    AboutDlgProc(HWND, UINT, WPARAM, LPARAM);
+void                EncryptFile(__in_z LPCWSTR pszFilename, __in_z LPCWSTR pszPassword);
+void                DecryptFile(__in_z LPCWSTR pszFilename, __in_z LPCWSTR pszPassword);
 
 
 void InitCodebook(char* pKeyData)
@@ -42,6 +44,23 @@ void InitCodebook(char* pKeyData)
 #endif
 }
 
+static bool IsHexStringW(__in_z LPCWSTR pwszArg, __in size_t cchExpected)
+{
+    if (::wcslen(pwszArg) != cchExpected)
+    {
+        return false;
+    }
+    for (size_t i = 0; i < cchExpected; ++i)
+    {
+        WCHAR wc = pwszArg[i];
+        if (!((wc >= L'0' && wc <= L'9') || (wc >= L'a' && wc <= L'f') || (wc >= L'A' && wc <= L'F')))
+        {
+            return false;
+        }
+    }
+    return true;
+}
+
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                      _In_opt_ HINSTANCE hPrevInstance,
@@ -51,10 +70,76 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     UNREFERENCED_PARAMETER(hPrevInstance);
     UNREFERENCED_PARAMETER(lpCmdLine);
 
+    int nArgs = 0;
+    LPWSTR* rgArgs = nullptr;
+    char szCodebook[33] = "b6a4c072764a2233db9c23b0bc79c143";
+    char szArgCodebook[33] = { 0 };
+    bool fHeadless = false;
+
     // Initialize global strings
     ::LoadStringW(hInstance, IDS_APP_TITLE, szTitle, MAX_LOADSTRING);
     ::LoadStringW(hInstance, IDS_CRYPTOPAD, szWindowClass, MAX_LOADSTRING);
     ::MyRegisterClass(hInstance);
+
+    rgArgs = ::CommandLineToArgvW(::GetCommandLineW(), &nArgs);
+
+    if (rgArgs != nullptr && nArgs >= 2)
+    {
+        if ((rgArgs[1][0] == L'E' || rgArgs[1][0] == L'D') && rgArgs[1][1] == L'\0' && nArgs >= 4)
+        {
+            // Headless encrypt/decrypt: CryptoPad.exe E|D <filename> <password> [<16-byte-hex-codebook>]
+            fHeadless = true;
+            if (nArgs >= 5 && IsHexStringW(rgArgs[4], 32))
+            {
+                if (::WideCharToMultiByte(CP_UTF8, 0, rgArgs[4], -1, szArgCodebook, ARRAYSIZE(szArgCodebook), nullptr, nullptr) == 0)
+                {
+                    ::MessageBoxW(nullptr, L"Invalid codebook argument", L"Argument Error", MB_OK | MB_ICONERROR);
+                    ::LocalFree(rgArgs);
+                    return 1;
+                }
+                ::InitCodebook(szArgCodebook);
+            }
+            else
+            {
+                ::InitCodebook(szCodebook);
+            }
+
+            if (rgArgs[1][0] == L'E')
+            {
+                ::EncryptFile(rgArgs[2], rgArgs[3]);
+            }
+            else
+            {
+                ::DecryptFile(rgArgs[2], rgArgs[3]);
+            }
+        }
+        else if (IsHexStringW(rgArgs[1], 32))
+        {
+            // First arg is a 16-byte hex codebook: CryptoPad.exe <16-byte-hex-codebook>
+            if (::WideCharToMultiByte(CP_UTF8, 0, rgArgs[1], -1, szArgCodebook, ARRAYSIZE(szArgCodebook), nullptr, nullptr) == 0)
+            {
+                ::MessageBoxW(nullptr, L"Invalid codebook argument", L"Argument Error", MB_OK | MB_ICONERROR);
+                ::LocalFree(rgArgs);
+                return 1;
+            }
+            ::InitCodebook(szArgCodebook);
+        }
+        else
+        {
+            ::InitCodebook(szCodebook);
+        }
+    }
+    else
+    {
+        ::InitCodebook(szCodebook);
+    }
+
+    ::LocalFree(rgArgs);
+
+    if (fHeadless)
+    {
+        return 0;
+    }
 
     return ::Run(hInstance, nCmdShow);
 }
@@ -99,12 +184,7 @@ ATOM MyRegisterClass(HINSTANCE hInstance)
 //
 BOOL Run(HINSTANCE hInstance, int nCmdShow)
 {
-    char szCodebook[33] = "b6a4c072764a2233db9c23b0bc79c143";
-
     hInst = hInstance; // Store instance handle in our global variable
-
-    // TBD load codebook from registry
-    ::InitCodebook(szCodebook);
 
     HWND hWnd = ::CreateWindowW(szWindowClass, szTitle, WS_OVERLAPPEDWINDOW,
         CW_USEDEFAULT, 0, CW_USEDEFAULT, 0, nullptr, nullptr, hInstance, nullptr);
