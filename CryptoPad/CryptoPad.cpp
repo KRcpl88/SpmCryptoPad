@@ -66,6 +66,7 @@ Error:
     return fResult;
 }
 
+enum HEADLESS_OP { NoOp, Encrypt, Decrypt };
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                      _In_opt_ HINSTANCE hPrevInstance,
@@ -80,7 +81,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     LPWSTR* rgArgs = nullptr;
     char szCodebook[33] = "b6a4c072764a2233db9c23b0bc79c143";
     char szArgCodebook[33] = { 0 };
-    bool fHeadless = false;
+    HEADLESS_OP eOp = NoOp;
 
     // Initialize global strings
     ::LoadStringW(hInstance, IDS_APP_TITLE, szTitle, MAX_LOADSTRING);
@@ -110,31 +111,33 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
         {
         case L'E':
         case L'e':
-            if (cArgs < 4)
-            {
-                ::MessageBoxW(nullptr, L"Usage: CryptoPad.exe E <filename> <password> [<codebook>]", L"Argument Error", MB_OK | MB_ICONERROR);
-                nResult = 1;
-                goto Error;
-            }
-            fHeadless = true;
-            ::EncryptFile(rgArgs[2], rgArgs[3]);
+            eOp = Encrypt;
             break;
 
         case L'D':
         case L'd':
-            if (cArgs < 4)
-            {
-                ::MessageBoxW(nullptr, L"Usage: CryptoPad.exe D <filename> <password> [<codebook>]", L"Argument Error", MB_OK | MB_ICONERROR);
-                nResult = 1;
-                goto Error;
-            }
-            fHeadless = true;
-            ::DecryptFile(rgArgs[2], rgArgs[3]);
+            eOp = Decrypt;
             break;
 
         default:
             nResult = 1;
             goto Error;
+        }
+
+        if (cArgs < 4)
+        {
+            ::MessageBoxW(nullptr, L"Usage: CryptoPad.exe <E|D> <filename> <password> [<codebook>]", L"Argument Error", MB_OK | MB_ICONERROR);
+            nResult = 1;
+            goto Error;
+        }
+
+        if (eOp == Encrypt)
+        {
+            ::EncryptFile(rgArgs[2], rgArgs[3]);
+        }
+        else
+        {
+            ::DecryptFile(rgArgs[2], rgArgs[3]);
         }
     }
     else
@@ -142,7 +145,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
         ::InitCodebook(szCodebook);
     }
 
-    if (!fHeadless)
+    if (eOp == NoOp)
     {
         nResult = ::Run(hInstance, nCmdShow);
     }
