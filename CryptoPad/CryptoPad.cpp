@@ -46,19 +46,24 @@ void InitCodebook(char* pKeyData)
 
 static bool IsHexStringW(__in_z LPCWSTR pwszArg, __in size_t cchExpected)
 {
+    bool fResult = false;
+
     if (::wcslen(pwszArg) != cchExpected)
     {
-        return false;
+        goto Done;
     }
     for (size_t i = 0; i < cchExpected; ++i)
     {
         WCHAR wc = pwszArg[i];
         if (!((wc >= L'0' && wc <= L'9') || (wc >= L'a' && wc <= L'f') || (wc >= L'A' && wc <= L'F')))
         {
-            return false;
+            goto Done;
         }
     }
-    return true;
+    fResult = true;
+
+Done:
+    return fResult;
 }
 
 
