@@ -23,8 +23,8 @@ ATOM                MyRegisterClass(HINSTANCE hInstance);
 BOOL                Run(HINSTANCE, int);
 LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK    AboutDlgProc(HWND, UINT, WPARAM, LPARAM);
-void                EncryptFile(__in_z LPCWSTR pszFilename, __in_z LPCWSTR pszPassword);
-void                DecryptFile(__in_z LPCWSTR pszFilename, __in_z LPCWSTR pszPassword);
+void                EncryptFile(__in_z LPCWSTR pwszFilename, __in_z LPCWSTR pwszPassword);
+void                DecryptFile(__in_z LPCWSTR pwszFilename, __in_z LPCWSTR pwszPassword);
 
 
 void InitCodebook(char* pKeyData)
@@ -70,7 +70,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     UNREFERENCED_PARAMETER(hPrevInstance);
     UNREFERENCED_PARAMETER(lpCmdLine);
 
-    int nArgs = 0;
+    int cArgs = 0;
     LPWSTR* rgArgs = nullptr;
     char szCodebook[33] = "b6a4c072764a2233db9c23b0bc79c143";
     char szArgCodebook[33] = { 0 };
@@ -81,17 +81,17 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     ::LoadStringW(hInstance, IDS_CRYPTOPAD, szWindowClass, MAX_LOADSTRING);
     ::MyRegisterClass(hInstance);
 
-    rgArgs = ::CommandLineToArgvW(::GetCommandLineW(), &nArgs);
+    rgArgs = ::CommandLineToArgvW(::GetCommandLineW(), &cArgs);
 
-    if (rgArgs != nullptr && nArgs >= 2)
+    if (rgArgs != nullptr && cArgs >= 2)
     {
-        if ((rgArgs[1][0] == L'E' || rgArgs[1][0] == L'D') && rgArgs[1][1] == L'\0' && nArgs >= 4)
+        if ((rgArgs[1][0] == L'E' || rgArgs[1][0] == L'D') && rgArgs[1][1] == L'\0' && cArgs >= 4)
         {
             // Headless encrypt/decrypt: CryptoPad.exe E|D <filename> <password> [<16-byte-hex-codebook>]
             fHeadless = true;
-            if (nArgs >= 5 && IsHexStringW(rgArgs[4], 32))
+            if (cArgs >= 5 && IsHexStringW(rgArgs[4], 32))
             {
-                if (::WideCharToMultiByte(CP_UTF8, 0, rgArgs[4], -1, szArgCodebook, ARRAYSIZE(szArgCodebook), nullptr, nullptr) == 0)
+                if (::WideCharToMultiByte(CP_UTF8, 0, rgArgs[4], -1, szArgCodebook, ARRAYSIZE(szArgCodebook), nullptr, nullptr) != 33)
                 {
                     ::MessageBoxW(nullptr, L"Invalid codebook argument", L"Argument Error", MB_OK | MB_ICONERROR);
                     ::LocalFree(rgArgs);
@@ -116,7 +116,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
         else if (IsHexStringW(rgArgs[1], 32))
         {
             // First arg is a 16-byte hex codebook: CryptoPad.exe <16-byte-hex-codebook>
-            if (::WideCharToMultiByte(CP_UTF8, 0, rgArgs[1], -1, szArgCodebook, ARRAYSIZE(szArgCodebook), nullptr, nullptr) == 0)
+            if (::WideCharToMultiByte(CP_UTF8, 0, rgArgs[1], -1, szArgCodebook, ARRAYSIZE(szArgCodebook), nullptr, nullptr) != 33)
             {
                 ::MessageBoxW(nullptr, L"Invalid codebook argument", L"Argument Error", MB_OK | MB_ICONERROR);
                 ::LocalFree(rgArgs);
@@ -134,7 +134,10 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
         ::InitCodebook(szCodebook);
     }
 
-    ::LocalFree(rgArgs);
+    if (rgArgs != nullptr)
+    {
+        ::LocalFree(rgArgs);
+    }
 
     if (fHeadless)
     {
