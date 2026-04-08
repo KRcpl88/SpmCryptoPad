@@ -50,19 +50,19 @@ static bool IsHexStringW(__in_z LPCWSTR pwszArg, __in size_t cchExpected)
 
     if (::wcslen(pwszArg) != cchExpected)
     {
-        goto Done;
+        goto Error;
     }
     for (size_t i = 0; i < cchExpected; ++i)
     {
         WCHAR wc = pwszArg[i];
         if (!((wc >= L'0' && wc <= L'9') || (wc >= L'a' && wc <= L'f') || (wc >= L'A' && wc <= L'F')))
         {
-            goto Done;
+            goto Error;
         }
     }
     fResult = true;
 
-Done:
+Error:
     return fResult;
 }
 
@@ -99,7 +99,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
             {
                 ::MessageBoxW(nullptr, L"Usage: CryptoPad.exe E <filename> <password> [<codebook>]", L"Argument Error", MB_OK | MB_ICONERROR);
                 nResult = 1;
-                goto Done;
+                goto Error;
             }
             fHeadless = true;
             if (cArgs >= 5 && ::IsHexStringW(rgArgs[4], 32))
@@ -108,7 +108,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                 {
                     ::MessageBoxW(nullptr, L"Invalid codebook argument", L"Argument Error", MB_OK | MB_ICONERROR);
                     nResult = 1;
-                    goto Done;
+                    goto Error;
                 }
                 ::InitCodebook(szArgCodebook);
             }
@@ -125,7 +125,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
             {
                 ::MessageBoxW(nullptr, L"Usage: CryptoPad.exe D <filename> <password> [<codebook>]", L"Argument Error", MB_OK | MB_ICONERROR);
                 nResult = 1;
-                goto Done;
+                goto Error;
             }
             fHeadless = true;
             if (cArgs >= 5 && ::IsHexStringW(rgArgs[4], 32))
@@ -134,7 +134,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                 {
                     ::MessageBoxW(nullptr, L"Invalid codebook argument", L"Argument Error", MB_OK | MB_ICONERROR);
                     nResult = 1;
-                    goto Done;
+                    goto Error;
                 }
                 ::InitCodebook(szArgCodebook);
             }
@@ -147,7 +147,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
         default:
             nResult = 1;
-            goto Done;
+            goto Error;
         }
     }
     else
@@ -160,7 +160,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
         nResult = ::Run(hInstance, nCmdShow);
     }
 
-Done:
+Error:
     if (rgArgs != nullptr)
     {
         ::LocalFree(rgArgs);
