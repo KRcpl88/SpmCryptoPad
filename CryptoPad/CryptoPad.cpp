@@ -96,7 +96,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                 return 1;
             }
             fHeadless = true;
-            if (cArgs >= 5 && IsHexStringW(rgArgs[4], 32))
+            if (cArgs >= 5 && ::IsHexStringW(rgArgs[4], 32))
             {
                 if (::WideCharToMultiByte(CP_UTF8, 0, rgArgs[4], -1, szArgCodebook, ARRAYSIZE(szArgCodebook), nullptr, nullptr) != 33)
                 {
@@ -122,7 +122,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                 return 1;
             }
             fHeadless = true;
-            if (cArgs >= 5 && IsHexStringW(rgArgs[4], 32))
+            if (cArgs >= 5 && ::IsHexStringW(rgArgs[4], 32))
             {
                 if (::WideCharToMultiByte(CP_UTF8, 0, rgArgs[4], -1, szArgCodebook, ARRAYSIZE(szArgCodebook), nullptr, nullptr) != 33)
                 {
