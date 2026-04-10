@@ -1,0 +1,36 @@
+{
+  "agents": [
+    {
+      "persistent_name": "Turing",
+      "universe": "historical-cryptanalysts",
+      "role": "Lead / Cipher Architect",
+      "created_at": "2026-04-10T21:24:00Z",
+      "legacy_named": false,
+      "status": "active"
+    },
+    {
+      "persistent_name": "Rejewski",
+      "universe": "historical-cryptanalysts",
+      "role": "Cipher Analyst",
+      "created_at": "2026-04-10T21:24:00Z",
+      "legacy_named": false,
+      "status": "active"
+    },
+    {
+      "persistent_name": "Friedman",
+      "universe": "historical-cryptanalysts",
+      "role": "Statistician",
+      "created_at": "2026-04-10T21:24:00Z",
+      "legacy_named": false,
+      "status": "active"
+    },
+    {
+      "persistent_name": "Driscoll",
+      "universe": "historical-cryptanalysts",
+      "role": "Attack Specialist",
+      "created_at": "2026-04-10T21:24:00Z",
+      "legacy_named": false,
+      "status": "active"
+    }
+  ]
+}

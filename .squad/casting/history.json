@@ -1,0 +1,10 @@
+{
+  "assignments": [
+    {
+      "assignment_id": "cryptanalysis-review-001",
+      "universe": "historical-cryptanalysts",
+      "created_at": "2026-04-10T21:24:00Z",
+      "agents": ["Turing", "Rejewski", "Friedman", "Driscoll"]
+    }
+  ]
+}
