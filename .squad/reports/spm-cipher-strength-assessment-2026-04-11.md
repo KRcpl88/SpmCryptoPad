@@ -1,4 +1,8 @@
-# SPM Block Cipher (CSpmBlockCipher64) Cryptanalysis
+# Cryptanalytic Strength Assessment — SPM Block Cipher (CSpmBlockCipher64)
+
+**Date:** 2026-04-11
+**Analysts:** Turing (Architect), Rejewski (Mathematician), Friedman (Statistician), Driscoll (Attack Specialist)
+**Scope:** Core cipher algorithm under full 256-bit key. No password attacks. No nonce-focused analysis.
 
 ---
 
@@ -40,6 +44,7 @@ A multi-phase adversarial cryptanalysis of the SPM block cipher found **no attac
 | Meet-in-the-middle | O(2^254) | 1 known P/C pair | S-box and masks entangled at every step |
 | Algebraic (SAT/Gröbner) | O(2^254) | 1 known P/C pair | System too large and nonlinear |
 | Slide attack | O(2^56) pairs needed | 2^63 bytes (~9 exabytes) | Data requirement impractical |
+| Codebook | O(2^1024) | 2^1024 blocks | Absurd — block space too large |
 | Side-channel + brute force | O(2^127) | S-box leak + 1 P/C pair | Conditional on physical access |
 
 ### 2.2 Why Key Decomposition Fails
@@ -128,8 +133,8 @@ The 256-bit key splits into two independent PRNG seeds: 128 bits for S-box gener
 |---|---|---|---|---|
 | 256-bit (current) | 128 bits | 128 bits | O(2^254) | O(2^127) |
 | 512-bit | 384 bits | 128 bits | O(2^510) | O(2^127) |
-| 1024-bit (balanced) | 512 bits | 512 bits | O(2^1024) | O(2^512) |
 | 1152-bit | 1024 bits | 128 bits | O(2^1150) | O(2^127) |
+| 1152-bit (balanced) | 576 bits | 576 bits | O(2^1150) | O(2^575) |
 
 In all configurations, the mask seed size determines the side-channel security floor. A balanced key split (equal S-box and mask seeds) maximizes security under both threat models.
 
@@ -165,6 +170,8 @@ The S-box is generated using a naive shuffle algorithm (swap each element with a
 
 The cipher compensates by running 16 successive shuffle passes over the same array. After 16 passes, the total variation distance between the resulting distribution and a uniform random permutation is approximately **0.6%** — negligible for cryptographic purposes. The expected differential uniformity δ ≈ 4–6 matches that of a truly random 16-bit permutation.
 
+The terminology "Fisher-Yates" in existing documentation is incorrect — it should be described as a "16-pass naive shuffle" — but the security impact is negligible.
+
 ---
 
 ## 4. Cipher Strengths — Consensus
@@ -183,7 +190,7 @@ The cipher compensates by running 16 successive shuffle passes over the same arr
 
 7. **Block independence enables parallelization and compartmentalized access.** The random-access design supports high-throughput parallel encryption and fine-grained security compartmentalization without sacrificing cryptanalytic strength.
 
-8. **Arbitrarily scalable key size.** The architecture imposes no upper limit on key width, allowing the security margin to be increased as computational threats evolve, with little or no impact on computational cost per block.
+8. **Arbitrarily scalable key size.** The architecture imposes no upper limit on key width, allowing the security margin to be increased as computational threats evolve.
 
 ---
 
@@ -218,4 +225,6 @@ The SPM block cipher, under full 256-bit key operation, is **cryptanalytically s
 
 The strongest attack is exhaustive key search at **O(2^254)** effective complexity. Under a side-channel threat model, the security floor is **O(2^127)**, which remains adequate and can be raised arbitrarily by increasing the key size.
 
+---
 
+*Report prepared by the SpmCryptoPad Cryptanalysis Squad. All findings represent team consensus after adversarial cross-review. No git operations performed.*
