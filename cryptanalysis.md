@@ -6,7 +6,7 @@
 
 A multi-phase adversarial cryptanalysis of the SPM block cipher found **no attack that reduces the effective complexity below brute force of the 256-bit key space**. The strongest pure cryptanalytic attack is exhaustive key search at **O(2^254)** (254 effective key bits due to two forced-odd PRNG keys). Under a side-channel threat model where the S-box table is leaked, the remaining search space is **O(2^127)** — still computationally infeasible. The cipher's primary defense is its 759-step cascading S-box with overlapping sliding windows, which prevents decomposition, layer-peeling, meet-in-the-middle, and algebraic attacks. The key architecture supports arbitrary key size expansion, meaning the security margin can be increased without architectural changes.
 
-Under quantum cryptanalysis, SPM demonstrates a **massive practical advantage over AES-256**. While both ciphers achieve comparable theoretical post-quantum security (~127–128 bits under the Grover halving metric), SPM's 16-bit key-dependent S-box — designed explicitly as a quantum countermeasure — requires approximately **2.1 million qubits** and **2^{36} gates per oracle call** to attack via Grover's algorithm, compared to ~320 qubits and 2^{15} gates for AES-256. This represents a **6,500× qubit advantage** and a **2-million-fold gate cost advantage**. SPM is also immune to Simon's algorithm and quantum algebraic attacks.
+Under quantum cryptanalysis, SPM demonstrates a **massive practical advantage over AES-256**. While both ciphers achieve comparable theoretical post-quantum security (~127–128 bits under the Grover halving metric), SPM's 16-bit key-dependent S-box — designed explicitly as a quantum countermeasure — requires approximately **1.05 million qubits** and **2^{36} gates per oracle call** to attack via Grover's algorithm, compared to ~320 qubits and ~2^{17}–2^{19} gates for AES-256. This represents a **~3,300× qubit advantage** and a **~130,000–500,000-fold gate cost advantage**. SPM is also immune to Simon's algorithm and quantum algebraic attacks. (This analysis uses the explicit quantum circuit model, standard in Grover-on-cipher literature.)
 
 ---
 
@@ -43,7 +43,7 @@ Under quantum cryptanalysis, SPM demonstrates a **massive practical advantage ov
 | Algebraic (SAT/Gröbner) | O(2^254) | 1 known P/C pair | System too large and nonlinear |
 | Slide attack | O(2^56) pairs needed | 2^63 bytes (~9 exabytes) | Data requirement impractical |
 | Side-channel + brute force | O(2^127) | S-box leak + 1 P/C pair | Conditional on physical access |
-| **Grover's algorithm (quantum)** | **O(2^{163}) gates** | 1 known P/C pair | No — requires ~2.1M qubits |
+| **Grover's algorithm (quantum)** | **O(2^{163}) gates** | 1 known P/C pair | No — requires ~1.05M qubits |
 | Simon's algorithm (quantum) | N/A | N/A | Not applicable — no public permutation |
 | Quantum algebraic | N/A | N/A | Not applicable — no compact S-box algebra |
 
@@ -231,9 +231,9 @@ SPM's 16-bit key-dependent S-box was designed explicitly as a quantum countermea
 
 | Resource | Estimate | Source |
 |----------|----------|--------|
-| Qubits | ~264–320 | Zou et al. 2025; Huang & Sun 2025 |
-| Gates per oracle call | ~2^{15} (26,000–53,000) | Grassl et al. 2016; Langenberg et al. 2020 |
-| Total gate operations | ~2^{143} | 2^{128} calls × 2^{15} gates |
+| Qubits | ~264 (AES-128) to ~320–400 (AES-256) | Zou et al. 2025; Huang & Sun 2025 |
+| Gates per oracle call | ~2^{17}–2^{19} cipher-evaluation T-gates | Grassl et al. 2016 (full Grover iteration ~2^{27.5}); Langenberg et al. 2020 |
+| Total gate operations | ~2^{145}–2^{147} | 2^{128} calls × 2^{17}–2^{19} gates |
 
 AES's compact quantum circuit is possible because its 8-bit S-box has only 256 entries and a known algebraic structure (GF(2^8) inversion), enabling efficient quantum synthesis via tower field decomposition.
 
@@ -244,11 +244,11 @@ The 16-bit S-box contains 65,536 entries of 16 bits each. In a quantum circuit, 
 | Component | Qubits Required | Notes |
 |-----------|----------------|-------|
 | S-box table (65,536 × 16-bit) | 1,048,576 | Dominant cost — directly from 16-bit width |
-| Reverse S-box table | 1,048,576 | Required for reversible computation |
+| Reverse S-box | 0 | Uncomputation makes the reverse S-box free — no separate register needed |
 | PRNG state registers | ~192 | State + key + index for each PRNG |
 | Block state (128 bytes) | 1,024 | Plaintext/ciphertext being processed |
 | Mask and ancillae | ~2,048 | Temporary computation registers |
-| **Total** | **~2,100,000** | **Approximately 2.1 million qubits** |
+| **Total** | **~1,050,000** | **Approximately 1.05 million qubits** |
 
 The S-box generation (16 passes × 65,536 swaps = 1,048,576 PRNG-driven shuffle operations) must execute inside the quantum circuit. Each swap requires a quantum multiplexer (QRAM) circuit with O(2^{16}) controlled operations for address decoding:
 
@@ -262,20 +262,24 @@ The S-box generation (16 passes × 65,536 swaps = 1,048,576 PRNG-driven shuffle 
 | Metric | AES-256 | SPM-256 | Ratio (SPM/AES) |
 |--------|---------|---------|-----------------|
 | Grover oracle calls | O(2^{128}) | O(2^{127}) | ~0.5× |
-| **Qubits required** | **~320** | **~2,100,000** | **~6,500×** |
-| **Gates per oracle call** | **~2^{15}** | **~2^{36}** | **~2^{21}× (2 million×)** |
-| **Total gate operations** | **~2^{143}** | **~2^{163}** | **~2^{20}× (1 million×)** |
+| **Qubits required** | **~320** | **~1,050,000** | **~3,300×** |
+| **Gates per oracle call** | **~2^{17}–2^{19}** | **~2^{36}** | **~2^{17}–2^{19}× (~130,000–500,000×)** |
+| **Total gate operations** | **~2^{145}–2^{147}** | **~2^{163}** | **~2^{16}–2^{18}× (~65,000–260,000×)** |
 | Post-quantum security (theoretical) | 128 bits | 127 bits | ~Equal |
 | **Post-quantum security (practical)** | 128 bits | **>>127 bits** | **SPM dramatically harder** |
 
 The theoretical post-quantum security levels (Grover halving metric) are nearly identical: 128 bits for AES-256 vs. 127 bits for SPM-256. However, this metric treats oracle calls as unit cost, which profoundly understates SPM's advantage.
 
 **A quantum computer capable of attacking AES-256 would be entirely inadequate for SPM-256.** It would need approximately:
-- **6,500× more qubits** (2.1 million vs. 320)
-- **2 million× more gates per oracle evaluation** (2^{36} vs. 2^{15})
-- **1 million× more total gate operations** (2^{163} vs. 2^{143})
+- **~3,300× more qubits** (1.05 million vs. 320)
+- **~130,000–500,000× more gates per oracle evaluation** (2^{36} vs. 2^{17}–2^{19})
+- **~65,000–260,000× more total gate operations** (2^{163} vs. 2^{145}–2^{147})
 
-The qubit requirement alone places SPM far beyond the reach of any quantum computer architecture currently envisioned. While AES-256 could theoretically be attacked by a quantum computer with a few hundred logical qubits (still far beyond current capability), attacking SPM-256 would require a machine with over 2 million logical qubits — a fundamentally different engineering challenge.
+The qubit requirement alone places SPM far beyond the reach of any quantum computer architecture currently envisioned. While AES-256 could theoretically be attacked by a quantum computer with a few hundred logical qubits (still far beyond current capability), attacking SPM-256 would require a machine with over 1 million logical qubits — a fundamentally different engineering challenge.
+
+> **Note on hybrid attacks:** A hybrid classical-quantum approach could reduce qubit requirements to ~3,000–5,000 by classically fixing the S-box seed and running Grover only over the mask seed. However, the total work would be O(2^{190+}) — far exceeding full Grover's O(2^{163}) — making this strictly worse for the attacker.
+
+> **Note on computation model:** This analysis uses the explicit quantum circuit model (standard in Grover-on-cipher literature), not the QRAM model.
 
 ### 7.4 Why Scaling Favors Wide S-boxes
 
@@ -284,24 +288,24 @@ The relationship between S-box width and quantum cost is superlinear:
 | S-box Width | Entries | Table Qubits | Total Qubits (est.) | Example Cipher |
 |-------------|---------|-------------|---------------------|----------------|
 | 8-bit | 256 | 2,048 | ~320 | AES |
-| 16-bit | 65,536 | 1,048,576 | ~2,100,000 | **SPM** |
-| Ratio | 256× | **512×** | **~6,500×** | |
+| 16-bit | 65,536 | 1,048,576 | ~1,050,000 | **SPM** |
+| Ratio | 256× | **512×** | **~3,300×** | |
 
-Each additional bit of S-box width doubles the entry count and quadruples the quantum register size. The jump from AES's 8-bit to SPM's 16-bit S-box — a mere doubling of width — produces a 6,500× increase in qubit requirements and a 2-million-fold increase in gate cost per oracle call. This superlinear scaling means that even modest increases in S-box width produce dramatic improvements in quantum resistance.
+Each additional bit of S-box width doubles the entry count; the total qubit cost scales as Q(b) = b × 2^b, giving a ratio that approaches 2× per additional bit for large b. The jump from AES's 8-bit to SPM's 16-bit S-box — a mere doubling of width — produces a ~3,300× increase in qubit requirements and a ~130,000–500,000-fold increase in gate cost per oracle call. This superlinear scaling means that even modest increases in S-box width produce dramatic improvements in quantum resistance.
 
 ### 7.5 Simon's Algorithm: Not Applicable
 
-Simon's algorithm provides exponential speedup against ciphers with exploitable algebraic periodicity (e.g., Even-Mansour constructions). SPM is immune for three reasons:
+Simon's algorithm provides exponential speedup against ciphers with a hidden XOR-period in their construction (e.g., Even-Mansour/FX constructions). SPM is immune for three reasons:
 
 1. **No public permutation.** SPM's S-box is key-dependent and secret. There is no public component to query independently.
 2. **No additive key structure.** The key's effect on ciphertext is the composition of 759 nonlinear substitutions, not a simple XOR.
 3. **Key-dependent nonlinearity.** Every nonlinear operation depends on the key, eliminating the separation between "public structure" and "secret key" that Simon's attack exploits.
 
-AES also resists Simon's algorithm on the full cipher, but its public S-box means Simon-type attacks on simplified AES variants (reduced rounds, Even-Mansour-like constructions) have been demonstrated. For SPM, even simplified variants resist Simon's attack because the S-box itself is secret.
+AES also resists Simon's algorithm on the full cipher, but Simon-type attacks on Even-Mansour/FX constructions instantiated with AES have been demonstrated (Kuwakado & Morii 2012; Bonnetain et al.). For SPM, even simplified variants resist Simon's attack because the S-box itself is secret.
 
 ### 7.6 Quantum Algebraic and Enhanced Differential/Linear Attacks
 
-**Quantum algebraic attacks** accelerate polynomial equation systems via quantum Gröbner basis computation. AES's S-box has a compact algebraic description (23 quadratic equations per S-box in GF(2)), providing a target for quantum algebraic solvers. SPM's S-box has **no compact algebraic description** — the expected algebraic degree is maximal (~2^{16} − 1). Quantum speedups applied to an intractable base complexity remain intractable.
+**Quantum algebraic attacks** accelerate polynomial equation systems via quantum Gröbner basis computation. AES's S-box has a compact algebraic description (23 quadratic equations per S-box in GF(2), per Courtois & Pieprzyk 2002), providing a target for quantum algebraic solvers. SPM's S-box has **no compact algebraic description** — the expected algebraic degree is maximal (15, the maximum n−1 for any n-bit Boolean component function, compared to AES's degree 7). Quantum speedups applied to an intractable base complexity remain intractable.
 
 **Quantum differential/linear attacks** use amplitude amplification for quadratic speedup. For AES, the fixed public DDT/LAT enables precomputation of optimal characteristics. For SPM, the DDT and LAT are key-dependent and unknown — the same barrier that blocks classical attacks blocks quantum-enhanced versions.
 
@@ -309,7 +313,7 @@ AES also resists Simon's algorithm on the full cipher, but its public S-box mean
 
 SPM's 16-bit key-dependent S-box provides quantum resistance through two reinforcing mechanisms:
 
-1. **Oracle cost amplification.** A fixed S-box (AES) can be hardwired into a quantum circuit using modest gates. A key-dependent S-box must be computed inside the Grover oracle in superposition. For SPM's 16-bit S-box, this transforms a lightweight oracle call into one costing 2^{36} gates — approximately 2 million times more than AES.
+1. **Oracle cost amplification.** A fixed S-box (AES) can be hardwired into a quantum circuit using modest gates. A key-dependent S-box must be computed inside the Grover oracle in superposition. For SPM's 16-bit S-box, this transforms a lightweight oracle call into one costing 2^{36} gates — approximately 130,000–500,000 times more than AES.
 
 2. **Algebraic structure elimination.** Quantum algorithms beyond Grover (Simon's, HHL, quantum algebraic solvers) exploit algebraic structure in the target function. AES's GF(2^8) S-box has a compact polynomial description. SPM's PRNG-generated S-box has no such description. This eliminates the algebraic handles that beyond-Grover quantum algorithms require, confining the quantum attacker to Grover's generic search — which faces the enormous oracle cost barrier.
 
@@ -321,7 +325,7 @@ The SPM block cipher, under full 256-bit key operation, is **cryptanalytically s
 
 The strongest classical attack is exhaustive key search at **O(2^254)** effective complexity. Under a side-channel threat model, the security floor is **O(2^127)**, which remains adequate and can be raised arbitrarily by increasing the key size.
 
-Under quantum cryptanalysis, SPM demonstrates a **dramatic practical advantage over AES-256**. While both ciphers achieve comparable theoretical post-quantum security under the Grover halving metric (~127–128 bits), SPM's 16-bit key-dependent S-box — designed explicitly as a quantum countermeasure — requires approximately 2.1 million qubits and 2^{36} gates per Grover oracle call, compared to ~320 qubits and 2^{15} gates for AES-256. A quantum computer capable of attacking AES-256 would need to be 6,500× larger in qubit count and perform 2 million times more gate operations per key candidate to attack SPM-256. SPM is also immune to Simon's algorithm and quantum algebraic attacks — families that, while not currently practical against full AES, have been demonstrated against simplified AES variants and remain a theoretical concern for fixed-S-box ciphers.
+Under quantum cryptanalysis, SPM demonstrates a **dramatic practical advantage over AES-256**. While both ciphers achieve comparable theoretical post-quantum security under the Grover halving metric (~127–128 bits), SPM's 16-bit key-dependent S-box — designed explicitly as a quantum countermeasure — requires approximately 1.05 million qubits and 2^{36} gates per Grover oracle call, compared to ~320 qubits and ~2^{17}–2^{19} gates for AES-256. A quantum computer capable of attacking AES-256 would need to be ~3,300× larger in qubit count and perform ~130,000–500,000 times more gate operations per key candidate to attack SPM-256. SPM is also immune to Simon's algorithm and quantum algebraic attacks — families that, while not currently practical against full AES, have been demonstrated against Even-Mansour/FX constructions instantiated with AES (Kuwakado & Morii 2012) and remain a theoretical concern for fixed-S-box ciphers.
 
 In a post-quantum threat landscape, SPM's 16-bit key-dependent S-box represents a compelling design paradigm — one where the very property that maximizes classical nonlinearity simultaneously maximizes the quantum attack cost.
 
