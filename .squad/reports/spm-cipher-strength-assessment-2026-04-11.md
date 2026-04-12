@@ -1,7 +1,5 @@
 # Cryptanalytic Strength Assessment — SPM Block Cipher (CSpmBlockCipher64)
 
-**Date:** 2026-04-11
-**Analysts:** Turing (Architect), Rejewski (Mathematician), Friedman (Statistician), Driscoll (Attack Specialist)
 **Scope:** Core cipher algorithm under full 256-bit key. No password attacks. No nonce-focused analysis.
 
 ---
@@ -227,4 +225,4 @@ The strongest attack is exhaustive key search at **O(2^254)** effective complexi
 
 ---
 
-*Report prepared by the SpmCryptoPad Cryptanalysis Squad. All findings represent team consensus after adversarial cross-review. No git operations performed.*
+*All findings represent consensus after adversarial cross-review.*

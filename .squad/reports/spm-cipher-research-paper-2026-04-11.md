@@ -1,8 +1,5 @@
 # The SPM Block Cipher: Algorithm Specification, Cryptanalysis, and Comparison with AES-256
 
-**Authors:** Cryptanalysis Squad — Turing, Rejewski, Friedman, Driscoll
-
-**Date:** April 2026
 
 ---
 
@@ -714,5 +711,3 @@ The choice between them depends on the operational requirements and threat model
 [25] H. Kuwakado and M. Morii, "Security on the Quantum-Type Even-Mansour Cipher," in *Proceedings of the International Symposium on Information Theory and its Applications (ISITA)*, 2012, pp. 312–316.
 
 ---
-
-*Manuscript prepared April 2026.*

@@ -198,14 +198,14 @@ SPM's key-dependent S-box must be **computed inside the Grover oracle** for each
 | Metric | AES-256 | SPM-256 | Ratio (SPM/AES) |
 |--------|---------|---------|-----------------|
 | Grover oracle calls | O(2^{128}) | O(2^{127}) | ~0.5× |
-| **Qubits required** | **~320** | **~1,050,000** | **~3,300×** |
+| **Qubits required** | **~320–400** | **~1,050,000** | **~3,300×** |
 | **Gates per oracle call** | **~2^{17}–2^{19}** | **~2^{36}** | **~2^{17}–2^{19}× (~130,000–500,000×)** |
 | **Total gate operations** | **~2^{145}–2^{147}** | **~2^{163}** | **~2^{16}–2^{18}× (~65,000–260,000×)** |
 | Post-quantum security (theoretical) | 128 bits | 127 bits | ~Equal |
 | **Post-quantum security (practical)** | 128 bits | **>>127 bits** | **SPM dramatically harder** |
 
 **A quantum computer capable of attacking AES-256 would be entirely inadequate for SPM-256.** It would need:
-- **~3,300× more qubits** (1.05 million vs. 320)
+- **~3,300× more qubits** (1.05 million vs. 320–400)
 - **~130,000–500,000× more gates per oracle evaluation** (2^{36} vs. 2^{17}–2^{19})
 - **~65,000–260,000× more total gate operations** (2^{163} vs. 2^{145}–2^{147})
 
@@ -221,7 +221,7 @@ The relationship between S-box width and quantum cost is superlinear:
 
 | S-box Width | Entries | Table Qubits | Total Qubits (est.) | Example Cipher |
 |-------------|---------|-------------|---------------------|----------------|
-| 8-bit | 256 | 2,048 | ~320 | AES |
+| 8-bit | 256 | 2,048 | ~320–400 | AES |
 | 16-bit | 65,536 | 1,048,576 | ~1,050,000 | **SPM** |
 | Ratio | 256× | **512×** | **~3,300×** | |
 

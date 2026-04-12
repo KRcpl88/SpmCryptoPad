@@ -1,7 +1,5 @@
 # Quantum Cryptanalysis of the SPM Block Cipher and Comparison with AES-256
 
-**Date:** April 2026
-**Authors:** Cryptanalysis Squad — Turing, Rejewski, Friedman, Driscoll
 **Addendum to:** *The SPM Block Cipher: Algorithm Specification, Cryptanalysis, and Comparison with AES-256*
 
 ---
