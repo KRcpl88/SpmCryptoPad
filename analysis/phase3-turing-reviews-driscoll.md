@@ -6,9 +6,9 @@
 
 ---
 
-## 1. Key Decomposition Attack — Feasibility Verdict
+## 1. Key Decomposition Attack - Feasibility Verdict
 
-**REFUTED.** The O(2^128) key decomposition attack I claimed in Phase 1 §3.1 is **not feasible** as described. Driscoll's implicit position — that no pure cryptanalytic attack separates the two key halves — is substantially correct. However, Driscoll's stated brute-force complexity of O(2^255) is inconsistent with his own analysis showing 2^254 effective key bits (see §5).
+**REFUTED.** The O(2^128) key decomposition attack I claimed in Phase 1 §3.1 is **not feasible** as described. Driscoll's implicit position - that no pure cryptanalytic attack separates the two key halves - is substantially correct. However, Driscoll's stated brute-force complexity of O(2^255) is inconsistent with his own analysis showing 2^254 effective key bits (see §5).
 
 ### Why the decomposition fails
 
@@ -20,19 +20,19 @@ The fatal flaw is in the verification step. **There is no polynomial-time proced
 
 Given a candidate S-box S_cand and known pair (P, C), the question is: does there exist a 127-bit mask PRNG seed such that encrypting P with S_cand and the derived mask sequence produces C?
 
-**Approach 1 — Forward simulation:** Starting from P, step 0 computes S_cand[P[0:2] XOR m_0]. We know P[0:2] but not m_0 (16 bits, first chunk of the unknown state_0). Without m_0, we cannot compute the step-0 output, and the cascade cannot proceed.
+**Approach 1 - Forward simulation:** Starting from P, step 0 computes S_cand[P[0:2] XOR m_0]. We know P[0:2] but not m_0 (16 bits, first chunk of the unknown state_0). Without m_0, we cannot compute the step-0 output, and the cascade cannot proceed.
 
-**Approach 2 — Backward from C:** The last cipher operation (step k=0 of round 3 reverse pass) satisfies C[0:2] = S_cand[I[0:2] XOR m_758]. We can compute S_cand^{-1}[C[0:2]] = I[0:2] XOR m_758, but both I[0:2] and m_758 are unknown. The equation has two unknowns and cannot be solved.
+**Approach 2 - Backward from C:** The last cipher operation (step k=0 of round 3 reverse pass) satisfies C[0:2] = S_cand[I[0:2] XOR m_758]. We can compute S_cand^{-1}[C[0:2]] = I[0:2] XOR m_758, but both I[0:2] and m_758 are unknown. The equation has two unknowns and cannot be solved.
 
-**Approach 3 — Mask extraction given S:** If we knew ALL intermediate states, we could extract each mask as m_k = S^{-1}[output_k] XOR input_k, then check PRNG consistency. But intermediate states are unobservable — we only have the initial plaintext and final ciphertext, separated by 759 cascaded nonlinear operations.
+**Approach 3 - Mask extraction given S:** If we knew ALL intermediate states, we could extract each mask as m_k = S^{-1}[output_k] XOR input_k, then check PRNG consistency. But intermediate states are unobservable - we only have the initial plaintext and final ciphertext, separated by 759 cascaded nonlinear operations.
 
-**Approach 4 — Brute-force mask search per S-box candidate:** For each of the 2^127 candidate S-boxes, enumerate 2^127 mask PRNG seeds, simulate the full cipher (O(759) per trial), and check if the output matches C. Total: 2^127 × 2^127 × O(759) = **O(2^254)** — identical to brute force.
+**Approach 4 - Brute-force mask search per S-box candidate:** For each of the 2^127 candidate S-boxes, enumerate 2^127 mask PRNG seeds, simulate the full cipher (O(759) per trial), and check if the output matches C. Total: 2^127 × 2^127 × O(759) = **O(2^254)** - identical to brute force.
 
-**Approach 5 — MITM within the mask PRNG:** The mask PRNG has state_0 (64 bits) and key (63 effective bits). Could we split the cipher to create a MITM? The first 4 masks (steps 0–3) depend only on state_0. Steps 4–7 depend on state_1 = state_0 + key. Steps 8+ depend on both. However, the backward computation from C through steps 758→4 requires ALL masks (which depend on both state_0 and key). There is no clean MITM split because every subsequent PRNG state is `state_0 + n*key`, mixing both values via modular addition. Total per S-box candidate remains O(2^127).
+**Approach 5 - MITM within the mask PRNG:** The mask PRNG has state_0 (64 bits) and key (63 effective bits). Could we split the cipher to create a MITM? The first 4 masks (steps 0–3) depend only on state_0. Steps 4–7 depend on state_1 = state_0 + key. Steps 8+ depend on both. However, the backward computation from C through steps 758→4 requires ALL masks (which depend on both state_0 and key). There is no clean MITM split because every subsequent PRNG state is `state_0 + n*key`, mixing both values via modular addition. Total per S-box candidate remains O(2^127).
 
 ### Why my Phase 1 claim was wrong
 
-I wrote: "If the S-box is wrong, inconsistency will be detected within the first few sliding-window steps." This is only true **if you already know the mask values** — you could extract candidate masks from each step and check PRNG structural consistency. But you DON'T know the masks; they're the other half of the unknown key. The statement confuses "inconsistency exists" (true — a wrong S-box with wrong masks produces wrong C) with "inconsistency is efficiently detectable" (false — detection requires knowing the masks).
+I wrote: "If the S-box is wrong, inconsistency will be detected within the first few sliding-window steps." This is only true **if you already know the mask values** - you could extract candidate masks from each step and check PRNG structural consistency. But you DON'T know the masks; they're the other half of the unknown key. The statement confuses "inconsistency exists" (true - a wrong S-box with wrong masks produces wrong C) with "inconsistency is efficiently detectable" (false - detection requires knowing the masks).
 
 ---
 
@@ -76,7 +76,7 @@ The constraint "P encrypts to C under S_cand and masks(state_0, key)" is a singl
 
 #### Step 4: Information-theoretic vs. computational
 
-Information-theoretically, one 1024-bit P/C pair provides 1024 bits of constraint on the 254-bit key, which is vastly over-determined — the key IS uniquely determined. But computationally, extracting the key from this constraint requires inverting 759 cascaded S-box lookups, which appears to require brute force.
+Information-theoretically, one 1024-bit P/C pair provides 1024 bits of constraint on the 254-bit key, which is vastly over-determined - the key IS uniquely determined. But computationally, extracting the key from this constraint requires inverting 759 cascaded S-box lookups, which appears to require brute force.
 
 **Verdict:** Verification of a candidate S-box requires O(2^127) work (exhaustive mask seed search). There is no known shortcut.
 
@@ -94,19 +94,19 @@ Driscoll correctly identifies (in his brute force entry): "Two forced-odd keys r
 
 | Attack | Claimed complexity | Revised complexity | Notes |
 |--------|-------------------|-------------------|-------|
-| Turing key decomposition (Phase 1 §3.1) | O(2^128) | **O(2^254)** — refuted | Verification of S-box candidate requires O(2^127) mask search |
-| Driscoll brute force | O(2^255) | **O(2^254)** — corrected | Driscoll's own table correctly shows 2^254 effective bits, but attack entries inconsistently say 2^255 |
+| Turing key decomposition (Phase 1 §3.1) | O(2^128) | **O(2^254)** - refuted | Verification of S-box candidate requires O(2^127) mask search |
+| Driscoll brute force | O(2^255) | **O(2^254)** - corrected | Driscoll's own table correctly shows 2^254 effective bits, but attack entries inconsistently say 2^255 |
 | Driscoll KPA | O(2^255) | O(2^254) | No improvement over brute force |
-| Driscoll CPA partition | O(2^16) partial info | See §4 — partially flawed | Does not extend to key recovery |
+| Driscoll CPA partition | O(2^16) partial info | See §4 - partially flawed | Does not extend to key recovery |
 | All other Driscoll attacks | O(2^255) | O(2^254) | No improvement over brute force |
 
 ### Key decomposition: nuanced position
 
-While the O(2^128) attack is refuted, the key architecture DOES have an important property that Driscoll correctly identifies in NF-4: **if the S-box is leaked through a side channel** (cache-timing, power analysis on the 128 KB lookup table, memory dump), the remaining search space collapses to 2^127. This is a genuine architectural weakness of the clean key split — partial compromise has outsized impact. But it is a side-channel concern, not a pure cryptanalytic attack.
+While the O(2^128) attack is refuted, the key architecture DOES have an important property that Driscoll correctly identifies in NF-4: **if the S-box is leaked through a side channel** (cache-timing, power analysis on the 128 KB lookup table, memory dump), the remaining search space collapses to 2^127. This is a genuine architectural weakness of the clean key split - partial compromise has outsized impact. But it is a side-channel concern, not a pure cryptanalytic attack.
 
 ### Can MITM achieve 2^128?
 
-The natural MITM split would be: enumerate S-box keys forward from P, enumerate mask keys backward from C, match at an intermediate state. But this fails because BOTH the S-box and masks are used at EVERY step — there is no intermediate state computable from just one key half. Driscoll's MITM analysis (§2.6) correctly identifies this entanglement.
+The natural MITM split would be: enumerate S-box keys forward from P, enumerate mask keys backward from C, match at an intermediate state. But this fails because BOTH the S-box and masks are used at EVERY step - there is no intermediate state computable from just one key half. Driscoll's MITM analysis (§2.6) correctly identifies this entanglement.
 
 ---
 
@@ -144,18 +144,18 @@ The grouping criterion "C[1:127] are identical" **only works for a single forwar
 **After round 1:** Positions 0 and 1 differ, positions 2–127 identical.
 
 **Round 2 forward pass:**
-- Step k=0: input (block[0], block[1]) — both differ → output differs → positions 0, 1 modified with different values.
-- Step k=1: input (block[1], block[2]) — block[1] differs (high byte of step 0 output) → output differs → position 2 now differs.
+- Step k=0: input (block[0], block[1]) - both differ → output differs → positions 0, 1 modified with different values.
+- Step k=1: input (block[1], block[2]) - block[1] differs (high byte of step 0 output) → output differs → position 2 now differs.
 - The difference cascades rightward through all 127 steps.
 - By the end of round 2 forward pass, ALL positions differ.
 
-**After 3 complete rounds:** The ciphertexts for x and x' (even with matching high bytes at step 0) are **completely different in ALL bytes**, not just byte 0. The grouping criterion "C[1:127] identical" will never be satisfied — every ciphertext pair will have distinct C[1:127] with overwhelming probability.
+**After 3 complete rounds:** The ciphertexts for x and x' (even with matching high bytes at step 0) are **completely different in ALL bytes**, not just byte 0. The grouping criterion "C[1:127] identical" will never be satisfied - every ciphertext pair will have distinct C[1:127] with overwhelming probability.
 
 ### 4.3 Verdict on the CPA partition attack
 
 The attack as described **does not work** against the full 3-round cipher. The partition recovery requires observing the step-0 output in isolation, which is only possible in a single-forward-pass model. The 3-round bidirectional cascade destroys the clean separation: a 1-byte difference after step 0 avalanches to all 128 bytes by the end of round 2.
 
-The underlying *principle* is correct — if an oracle gave you access to the step-0 output directly, you could partition by the overlapping byte. But the cipher provides no such oracle. Driscoll's assessment that the attack has "negligible security impact" is correct, though for a stronger reason than he states: the attack doesn't just fail to extend to key recovery — the partition recovery itself fails against the full cipher.
+The underlying *principle* is correct - if an oracle gave you access to the step-0 output directly, you could partition by the overlapping byte. But the cipher provides no such oracle. Driscoll's assessment that the attack has "negligible security impact" is correct, though for a stronger reason than he states: the attack doesn't just fail to extend to key recovery - the partition recovery itself fails against the full cipher.
 
 ### 4.4 Could a modified CPA distinguish same-class from different-class pairs?
 
@@ -167,7 +167,7 @@ An attacker might hope to use statistical distinguishers instead of exact equali
 
 ### 5.1 Agreement: MITM analysis (§2.6)
 
-Driscoll's MITM analysis is correct and thorough. The S-box and masks are entangled at every step, preventing any natural MITM split. This is the core reason the key decomposition fails — the same conclusion reached by different reasoning.
+Driscoll's MITM analysis is correct and thorough. The S-box and masks are entangled at every step, preventing any natural MITM split. This is the core reason the key decomposition fails - the same conclusion reached by different reasoning.
 
 ### 5.2 Agreement: Differential/linear analysis (§2.3, §2.4)
 
@@ -187,7 +187,7 @@ Driscoll's NF-4 correctly identifies that the clean key split means partial comp
 
 ### 5.6 Minor note: Slide attack PRNG period
 
-Driscoll computes the mask sequence period as ~2^66 values / 759 masks per block ≈ 2^56.4 blocks. The calculation is correct. However, the Weyl PRNG's period of 2^64 states (not 2^66 values — 4 outputs per state gives 4 × 2^64 total outputs, but the state period is 2^64) means the mask sequence period is (4 × 2^64) / 759 ≈ 2^56.4 blocks. The 2^63.4 byte figure is consistent (2^56.4 blocks × 2^7 bytes/block = 2^63.4 bytes). This is correct.
+Driscoll computes the mask sequence period as ~2^66 values / 759 masks per block ≈ 2^56.4 blocks. The calculation is correct. However, the Weyl PRNG's period of 2^64 states (not 2^66 values - 4 outputs per state gives 4 × 2^64 total outputs, but the state period is 2^64) means the mask sequence period is (4 × 2^64) / 759 ≈ 2^56.4 blocks. The 2^63.4 byte figure is consistent (2^56.4 blocks × 2^7 bytes/block = 2^63.4 bytes). This is correct.
 
 ### 5.7 Missing from Driscoll: pPrngSBox advancement during encryption
 
@@ -199,9 +199,9 @@ Driscoll's question 4 (§6) asks whether `m_prngSBox` advances during encryption
 
 | My Phase 1 Claim | Verdict | Driscoll's Position | Verdict |
 |---|---|---|---|
-| Key decomposition to O(2^128) | **REFUTED** — verification requires O(2^127) mask search | No attack beats brute force | **CORRECT** (modulo 2^255→2^254 correction) |
-| S-box verifiable in O(1) | **REFUTED** — intermediate states unobservable | S-box/mask entangled at every step | **CORRECT** |
-| N/A | N/A | CPA partition recovers low-byte classes | **PARTIALLY FLAWED** — wrong byte (high not low) and doesn't work against full cipher |
+| Key decomposition to O(2^128) | **REFUTED** - verification requires O(2^127) mask search | No attack beats brute force | **CORRECT** (modulo 2^255→2^254 correction) |
+| S-box verifiable in O(1) | **REFUTED** - intermediate states unobservable | S-box/mask entangled at every step | **CORRECT** |
+| N/A | N/A | CPA partition recovers low-byte classes | **PARTIALLY FLAWED** - wrong byte (high not low) and doesn't work against full cipher |
 
 **Bottom line:** The effective security of the cipher under a full 256-bit key is **O(2^254)**, matching brute force. No known cryptanalytic technique provides an advantage. The key decomposition is a theoretical concern only under side-channel leakage scenarios.
 

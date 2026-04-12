@@ -15,6 +15,6 @@ O(2^254) brute force. No cryptanalytic shortcut found. Side-channel: O(2^127) co
 
 ## Most Practical Attack
 
-Ciphertext manipulation — O(1), no key knowledge required. No authentication.
+Ciphertext manipulation - O(1), no key knowledge required. No authentication.
 
-## Consensus Complete — Proceeding to Phase 5 Final Report.
+## Consensus Complete - Proceeding to Phase 5 Final Report.

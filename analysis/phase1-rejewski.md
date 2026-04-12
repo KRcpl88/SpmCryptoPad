@@ -1,4 +1,4 @@
-# Phase 1: Rejewski — Mathematical Assessment of cryptanalysis.md
+# Phase 1: Rejewski - Mathematical Assessment of cryptanalysis.md
 
 **Analyst:** Rejewski (Cipher Mathematician)
 **Date:** 2025-07-15
@@ -9,7 +9,7 @@
 
 ## 1. Accuracy Assessment
 
-### Finding #1: S-box state space — 2^127 vs 2^954,009
+### Finding #1: S-box state space - 2^127 vs 2^954,009
 
 **Verdict: ACCURATE but INCOMPLETE**
 
@@ -33,7 +33,7 @@ The document rounds to 954,009. Applying a more precise Stirling computation:
 - = 661,228.2
 - log₂(65536!) = 661,228.2 / ln(2) = 661,228.2 / 0.69315 ≈ **954,017**
 
-The document's 954,009 is approximately correct (within rounding of Stirling terms). The exact value is not critical — the point is that 2^127 ≪ 2^954,017 by a factor of ~2^953,890, which is correct.
+The document's 954,009 is approximately correct (within rounding of Stirling terms). The exact value is not critical - the point is that 2^127 ≪ 2^954,017 by a factor of ~2^953,890, which is correct.
 
 **What's INCOMPLETE:** The document does not address whether the 2^127 reachable permutations form an algebraically structured subset. See §2.3 for analysis.
 
@@ -45,7 +45,7 @@ This is a metadata concern, not a cryptographic-mathematical one. No mathematica
 
 ### Non-Finding #1: Round count comparison with AES
 
-**Verdict: INCOMPLETE — overstates security equivalence**
+**Verdict: INCOMPLETE - overstates security equivalence**
 
 The document claims "3 SPM rounds = 6 full diffusion sweeps ≈ 24+ AES diffusion layers." This is **qualitatively reasonable but mathematically imprecise** for the following reasons:
 
@@ -63,7 +63,7 @@ The claim that PRNG mask outputs cannot be directly observed from ciphertext is 
 
 **Caveat:** The document does not address *known-plaintext* attacks. If an attacker knows a full plaintext block, they can compute:
 - C[k:k+2] = S(P[k:k+2] ⊕ mask_k) where C is the intermediate state after this step
-- But C[k:k+2] is not directly observable either — it's further modified by position k+1
+- But C[k:k+2] is not directly observable either - it's further modified by position k+1
 
 This creates a system of coupled equations that may be solvable. See §2.5.
 
@@ -73,7 +73,7 @@ This creates a system of coupled equations that may be solvable. See §2.5.
 
 ### Non-Finding #4: Nonce entropy
 
-**Verdict: ACCURATE** (out of scope per standing orders — nonce is secondary)
+**Verdict: ACCURATE** (out of scope per standing orders - nonce is secondary)
 
 ### Strength: "Overlapping sliding-window diffusion is structurally sound"
 
@@ -81,7 +81,7 @@ This creates a system of coupled equations that may be solvable. See §2.5.
 
 The claim that "a change in any single input byte cascades through all 128 bytes in one directional pass" is correct as a *qualitative* statement about bit influence. However, "structurally sound" implies security guarantees that don't follow from mere cascade existence. See §2.5 for the mathematical analysis of the cascade structure.
 
-The claim that the S-box "provides strong local nonlinearity" is **UNSUBSTANTIATED** — no nonlinearity metrics (Walsh spectrum, differential uniformity) are provided. See §2.3.
+The claim that the S-box "provides strong local nonlinearity" is **UNSUBSTANTIATED** - no nonlinearity metrics (Walsh spectrum, differential uniformity) are provided. See §2.3.
 
 ---
 
@@ -121,7 +121,7 @@ P(0→0) = ((n-1)/n)^n ≈ 1/e ≈ 0.3679
 
 For a true random permutation: P(0→0) = 1/n = 1/65536 ≈ 0.0000153
 
-This is a **massive bias for a single pass** — position 0 is ~24,000× more likely to stay at position 0 than expected.
+This is a **massive bias for a single pass** - position 0 is ~24,000× more likely to stay at position 0 than expected.
 
 More generally, for the naive shuffle, the probability matrix M where M[i][j] = P(element originally at i ends at j) is not the uniform matrix (1/n for all entries). The deviations follow a known pattern first characterized by Mironov (2002): the distribution has a specific bias structure where positions tend to shift rightward.
 
@@ -137,9 +137,9 @@ TV ≤ (n-1) · |λ₁|^t ≤ 65535 · (1/e)^16 ≈ 65535 · 8.9 × 10^-8 ≈ 0.
 
 This means after 16 passes, the total variation distance from a uniform random permutation is approximately **0.6%**. This is small but nonzero.
 
-**Assessment:** 16 passes of naive Fisher-Yates reduce the bias to negligible levels for practical purposes. The residual ~0.6% TV distance is unlikely to be exploitable, though it's theoretically imperfect. The document's claim that the S-box is "Fisher-Yates shuffled" is **misleading** — it should say "16-pass naive shuffle" and acknowledge the residual bias.
+**Assessment:** 16 passes of naive Fisher-Yates reduce the bias to negligible levels for practical purposes. The residual ~0.6% TV distance is unlikely to be exploitable, though it's theoretically imperfect. The document's claim that the S-box is "Fisher-Yates shuffled" is **misleading** - it should say "16-pass naive shuffle" and acknowledge the residual bias.
 
-**Important caveat:** The above analysis assumes *independent random inputs* for each pass. The CSimplePrng64 outputs are not independent — they're deterministic given the seed. The actual bias may differ from the i.i.d. analysis. However, since the PRNG is the security bottleneck anyway (2^127 seed space), the Fisher-Yates bias is a secondary concern.
+**Important caveat:** The above analysis assumes *independent random inputs* for each pass. The CSimplePrng64 outputs are not independent - they're deterministic given the seed. The actual bias may differ from the i.i.d. analysis. However, since the PRNG is the security bottleneck anyway (2^127 seed space), the Fisher-Yates bias is a secondary concern.
 
 ### 2.3 S-box Algebraic Properties
 
@@ -157,7 +157,7 @@ For comparison, AES's 8-bit S-box has δ = 4 (optimal for that size). A random 1
 
 **However:** The S-box is generated by a *linear* PRNG. Does this create exploitable structure in the DDT?
 
-The answer is **probably no**, but with no proof. The shuffle process (even naive Fisher-Yates) is a highly nonlinear function of the PRNG outputs — swapping elements based on indices creates complex combinatorial dependencies. The linearity of the PRNG is "absorbed" by the permutation-generation process. Nonetheless, no formal proof exists that the resulting DDT/LAT properties are indistinguishable from random.
+The answer is **probably no**, but with no proof. The shuffle process (even naive Fisher-Yates) is a highly nonlinear function of the PRNG outputs - swapping elements based on indices creates complex combinatorial dependencies. The linearity of the PRNG is "absorbed" by the permutation-generation process. Nonetheless, no formal proof exists that the resulting DDT/LAT properties are indistinguishable from random.
 
 **Linear approximation table (LAT):**
 
@@ -167,7 +167,7 @@ max_{a≠0,b≠0} |Σ_x (-1)^{a·x ⊕ b·S(x)}| ≈ √(2^16 · ln(2^16)) ≈ �
 
 The corresponding correlation is 853/65536 ≈ 0.013, or bias ε ≈ 0.0065. This is very small.
 
-**Assessment:** A PRNG-generated 16-bit S-box is expected to have near-ideal differential and linear properties purely by size — the 16-bit permutation space is large enough that even a biased sample is overwhelmingly likely to have good cryptographic properties. This is a genuine strength.
+**Assessment:** A PRNG-generated 16-bit S-box is expected to have near-ideal differential and linear properties purely by size - the 16-bit permutation space is large enough that even a biased sample is overwhelmingly likely to have good cryptographic properties. This is a genuine strength.
 
 ### 2.4 Mask-S-box Interaction Analysis
 
@@ -179,9 +179,9 @@ block[k:k+2] ← S(block[k:k+2] ⊕ mask_k)
 
 where S is the fixed (key-dependent) S-box permutation and mask_k is the k-th 16-bit PRNG output.
 
-**Algebraic structure:** Define f_k(x) = S(x ⊕ m_k) for 16-bit x. This is a *translated permutation* — the composition of a fixed translation (XOR with m_k) and a fixed permutation S. The set {f_k} as m_k varies over all 16-bit values forms the **coset** of S in the symmetric group with respect to the translation subgroup.
+**Algebraic structure:** Define f_k(x) = S(x ⊕ m_k) for 16-bit x. This is a *translated permutation* - the composition of a fixed translation (XOR with m_k) and a fixed permutation S. The set {f_k} as m_k varies over all 16-bit values forms the **coset** of S in the symmetric group with respect to the translation subgroup.
 
-Key property: f_k is itself a permutation for every m_k, and f_k ∘ f_j^{-1} = S ∘ T_{m_k ⊕ m_j} ∘ S^{-1}, which is a conjugate of a translation. If S were an affine map, this would be another translation — but for a nonlinear S, these conjugates are generally non-affine.
+Key property: f_k is itself a permutation for every m_k, and f_k ∘ f_j^{-1} = S ∘ T_{m_k ⊕ m_j} ∘ S^{-1}, which is a conjugate of a translation. If S were an affine map, this would be another translation - but for a nonlinear S, these conjugates are generally non-affine.
 
 **Differential property of the cascade:** For two inputs x, x' differing by Δx at position k, the output difference after the S-box is:
 
@@ -189,7 +189,7 @@ Key property: f_k is itself a permutation for every m_k, and f_k ∘ f_j^{-1} = 
 
 This is exactly the DDT entry for S at input difference Δx. **The mask cancels out of the differential.** This is critical: masks provide no resistance to differential cryptanalysis within a single known-plaintext pair.
 
-The mask's role is to prevent the attacker from knowing the *absolute* S-box input — but differential attacks only need *differences*, for which the mask is transparent.
+The mask's role is to prevent the attacker from knowing the *absolute* S-box input - but differential attacks only need *differences*, for which the mask is transparent.
 
 ### 2.5 Sliding-Window Dependency Chain
 
@@ -206,7 +206,7 @@ The key observation: position k+1 then reads W_{k+1} = (B'[k+1], B[k+2]), where 
 
 Let the S-box output at position k be (y_k^lo, y_k^hi) = S((B[k], B[k+1]) ⊕ m_k). Then:
 - B'[k] = y_k^lo (final value for byte k, no further modification in this pass)
-- B'[k+1] = y_k^hi (temporary — will be overwritten by position k+1)
+- B'[k+1] = y_k^hi (temporary - will be overwritten by position k+1)
 
 At position k+1:
 - Input word = (y_k^hi, B[k+2])
@@ -225,9 +225,9 @@ If byte B[0] is changed by δ (with all other input bytes fixed), the forward pa
 
 **Probability of chain extinction:** At each step, we need the DDT entry for S at input difference (d, 0) where d is a single-byte difference. The probability that (d, 0) → (0, 0) through S is at most δ(S)/2^16 where δ(S) is the differential uniformity. For a good 16-bit S-box with δ ≈ 6, this probability is ~6/65536 ≈ 0.0001 per step.
 
-Over 127 steps, the probability that the chain *survives* (never maps to zero difference) is approximately (1 - 6/65536)^127 ≈ 0.988. So with ~98.8% probability, a single-byte input change propagates through the entire forward pass — confirming the diffusion claim.
+Over 127 steps, the probability that the chain *survives* (never maps to zero difference) is approximately (1 - 6/65536)^127 ≈ 0.988. So with ~98.8% probability, a single-byte input change propagates through the entire forward pass - confirming the diffusion claim.
 
-**But:** The difference at each step is *concentrated in the low byte* of the 16-bit word (the overlap byte). The high byte of the input word at each step has zero difference. This means the cascade differential trail is constrained to a special form — the input to each S-box lookup has a nonzero difference only in the low 8 bits. This restricts the DDT rows that matter to the 255 rows of the form (d, 0) for d ∈ {1,...,255}, which is a tiny fraction of the 65535 possible nonzero input differences.
+**But:** The difference at each step is *concentrated in the low byte* of the 16-bit word (the overlap byte). The high byte of the input word at each step has zero difference. This means the cascade differential trail is constrained to a special form - the input to each S-box lookup has a nonzero difference only in the low 8 bits. This restricts the DDT rows that matter to the 255 rows of the form (d, 0) for d ∈ {1,...,255}, which is a tiny fraction of the 65535 possible nonzero input differences.
 
 **Implication:** Differential trails through the forward pass are restricted to a 1-dimensional subspace of the 2-dimensional input difference space at each step. An attacker can precompute the DDT restricted to these 255 rows and build a truncated differential characteristic with much higher probability than a full 16-bit analysis would suggest.
 
@@ -272,7 +272,7 @@ where in_k and out_k are determined by the cascade. Given P, the inputs in_k are
 Total unknowns: 127 (S-box seed) + 127 (mask seed) = 254 bits.
 Total constraints from one block: 127 equations, each constraining a 16-bit S-box lookup.
 
-With two known plaintext blocks, we have 254 equations — matching the 254 bits of key. This suggests that **two known plaintext blocks theoretically determine the key**, though extracting it requires solving a highly nonlinear system.
+With two known plaintext blocks, we have 254 equations - matching the 254 bits of key. This suggests that **two known plaintext blocks theoretically determine the key**, though extracting it requires solving a highly nonlinear system.
 
 ---
 
@@ -302,7 +302,7 @@ Two known plaintext-ciphertext pairs provide enough constraints (254 equations o
 
 ### NF-4: No Key Schedule (LOW-MEDIUM)
 
-The 32-byte key is split into two 16-byte halves: one for the S-box PRNG, one for the mask PRNG. There is no key schedule — the S-box PRNG generates the S-box once, and the mask PRNG generates a fresh mask for every position. This means:
+The 32-byte key is split into two 16-byte halves: one for the S-box PRNG, one for the mask PRNG. There is no key schedule - the S-box PRNG generates the S-box once, and the mask PRNG generates a fresh mask for every position. This means:
 - Related-key attacks may be feasible: changing one byte of the S-box half changes only the S-box, leaving the mask stream identical
 - Related-key differentials could be constructed to isolate S-box effects from mask effects
 - AES-style related-key attacks exploit exactly this kind of structural separation
@@ -372,4 +372,4 @@ Operating on 1024-bit blocks means that each S-box application mixes information
 
 ---
 
-*End of Phase 1 report — Rejewski*
+*End of Phase 1 report - Rejewski*

@@ -1,4 +1,4 @@
-# Phase 1: Turing — Architectural Assessment of cryptanalysis.md
+# Phase 1: Turing - Architectural Assessment of cryptanalysis.md
 
 **Date:** 2025-07-15
 **Scope:** Core algorithm with full 256-bit key via `SetKeys()`. Nonce secondary.
@@ -7,19 +7,19 @@
 
 ## 1. Accuracy Assessment
 
-### Finding #1 — S-box State Space (rated MEDIUM)
+### Finding #1 - S-box State Space (rated MEDIUM)
 
 **Verdict: ACCURATE but INCOMPLETE**
 
-The math is correct: 2^127 reachable permutations of the 2^954,009 possible 16-bit permutations. However, the document frames this as a theoretical concern analogous to AES's fixed S-box. This is misleading — AES's fixed S-box was *designed* with optimal differential/linear properties (max differential probability 2^-6, max linear bias 2^-3 per S-box). SPM's S-boxes are *random* permutations drawn from a tiny, structurally biased subset (the PRNG is a simple additive counter — see §2.1 below). The concern is not just coverage but *quality*: a random 16-bit permutation will have average-case differential/linear properties, but the PRNG's linearity may produce S-boxes with exploitable structure.
+The math is correct: 2^127 reachable permutations of the 2^954,009 possible 16-bit permutations. However, the document frames this as a theoretical concern analogous to AES's fixed S-box. This is misleading - AES's fixed S-box was *designed* with optimal differential/linear properties (max differential probability 2^-6, max linear bias 2^-3 per S-box). SPM's S-boxes are *random* permutations drawn from a tiny, structurally biased subset (the PRNG is a simple additive counter - see §2.1 below). The concern is not just coverage but *quality*: a random 16-bit permutation will have average-case differential/linear properties, but the PRNG's linearity may produce S-boxes with exploitable structure.
 
-### Finding #2 — Plaintext File-Size Leakage (rated LOW)
+### Finding #2 - Plaintext File-Size Leakage (rated LOW)
 
 **Verdict: ACCURATE**
 
 Straightforward information leak. LOW severity is appropriate.
 
-### Non-Finding #1 — Round Count / Diffusion Claim
+### Non-Finding #1 - Round Count / Diffusion Claim
 
 **Verdict: INCOMPLETE / MISLEADING**
 
@@ -33,33 +33,33 @@ I have traced the actual byte dependencies through the code:
 - byte[126] and byte[127] depend on all 128 bytes
 
 **Reverse pass** (`s_SmReversePass`, k=125..0): Right-to-left cascade. By the time k=0 is processed, byte[1] carries dependencies from the entire forward-pass output, which includes all 128 bytes. So after the full round:
-- **Every byte depends on all 128 input bytes** — the "full diffusion" claim is technically TRUE
+- **Every byte depends on all 128 input bytes** - the "full diffusion" claim is technically TRUE
 
 **But the comparison to AES is misleading for three reasons:**
 
-1. **Serial chain vs. algebraic mixing.** SPM's diffusion is a *serial cascade* through a chain of 127+126 S-box lookups. Each S-box sees only 16 bits. A change in byte[0] reaches byte[127] through 127 sequential S-box hops. AES's MixColumns provides *algebraic* mixing with MDS (Maximum Distance Separable) properties — a single MixColumns guarantees that any 1-byte change produces ≥4 changed bytes with branch number 5. SPM has no equivalent guarantee about *how many* bytes change, only that all bytes have *some* dependency.
+1. **Serial chain vs. algebraic mixing.** SPM's diffusion is a *serial cascade* through a chain of 127+126 S-box lookups. Each S-box sees only 16 bits. A change in byte[0] reaches byte[127] through 127 sequential S-box hops. AES's MixColumns provides *algebraic* mixing with MDS (Maximum Distance Separable) properties - a single MixColumns guarantees that any 1-byte change produces ≥4 changed bytes with branch number 5. SPM has no equivalent guarantee about *how many* bytes change, only that all bytes have *some* dependency.
 
 2. **Diffusion quality is unquantified.** The document claims diffusion parity with AES without measuring it. Proper comparison requires computing the *differential branch number* and *linear branch number* of the round function. A single SPM S-box has a 16-bit → 16-bit substitution with 1-byte overlap at each step. The XOR-mask adds key-dependent variation but is *linear* (XOR), so it contributes zero nonlinear diffusion. All nonlinearity comes from the S-box, and the overlap means each step's nonlinear mixing covers only 2 bytes.
 
-3. **Boundary asymmetry.** byte[127] is processed only in the forward pass (at k=126) and never in the reverse pass (reverse starts at k=125). byte[0] is processed in both passes. This creates a structural asymmetry — the right edge has weaker mixing than the interior. Over 3 rounds this is probably washed out, but it contradicts the "full bidirectional" framing.
+3. **Boundary asymmetry.** byte[127] is processed only in the forward pass (at k=126) and never in the reverse pass (reverse starts at k=125). byte[0] is processed in both passes. This creates a structural asymmetry - the right edge has weaker mixing than the interior. Over 3 rounds this is probably washed out, but it contradicts the "full bidirectional" framing.
 
 **My assessment:** The "full diffusion per round" claim is defensible in the strict dependency sense. The "≈ 24+ AES diffusion layers" comparison is **not defensible** and should be retracted. These are fundamentally different diffusion mechanisms with different algebraic properties.
 
-### Non-Finding #2 — PRNG Not Independently Exploitable
+### Non-Finding #2 - PRNG Not Independently Exploitable
 
 **Verdict: ACCURATE with caveats**
 
-The document correctly identifies that PRNG mask values cannot be directly observed from ciphertext because they are consumed inside `S(plaintext[k:k+1] ⊕ mask)`. Correct — you'd need to know the S-box to extract masks, and the S-box requires the key.
+The document correctly identifies that PRNG mask values cannot be directly observed from ciphertext because they are consumed inside `S(plaintext[k:k+1] ⊕ mask)`. Correct - you'd need to know the S-box to extract masks, and the S-box requires the key.
 
-However, the document understates the *structural* weakness. The PRNG is `state += key (mod 2^64)`, outputting 4×16-bit words per state advance. This is a *linear congruential generator with zero multiplication* — it is the weakest possible PRNG that still has full period. Any 2 consecutive 64-bit states reveal the key entirely. The document should note: if *any* cryptanalytic technique recovers even 128 bits of consecutive mask stream, the entire past/future mask sequence for all blocks is immediately known.
+However, the document understates the *structural* weakness. The PRNG is `state += key (mod 2^64)`, outputting 4×16-bit words per state advance. This is a *linear congruential generator with zero multiplication* - it is the weakest possible PRNG that still has full period. Any 2 consecutive 64-bit states reveal the key entirely. The document should note: if *any* cryptanalytic technique recovers even 128 bits of consecutive mask stream, the entire past/future mask sequence for all blocks is immediately known.
 
-### Non-Finding #3 — Password Weakness Out of Scope
+### Non-Finding #3 - Password Weakness Out of Scope
 
 **Verdict: ACCURATE**
 
 Agreed. With a full 256-bit key, password attacks are irrelevant.
 
-### Non-Finding #4 — Nonce Entropy
+### Non-Finding #4 - Nonce Entropy
 
 **Verdict: ACCURATE**
 
@@ -86,7 +86,7 @@ This means the Fisher-Yates shuffle indices are not independent random variables
 
 This is not mentioned in the document's S-box analysis, which focuses only on state-space coverage.
 
-### 2.2 No Block Chaining — Structural ECB Weakness
+### 2.2 No Block Chaining - Structural ECB Weakness
 
 The `Encrypt()` function processes blocks sequentially:
 ```cpp
@@ -98,7 +98,7 @@ Inter-block variation comes *only* from PRNG state advancement. There is no CBC,
 
 1. **No ciphertext feedback:** Block N's ciphertext does not influence block N+1's encryption. The PRNG state is the sole differentiator.
 2. **Block-level malleability:** An attacker can reorder, duplicate, or delete 128-byte ciphertext blocks. Without a MAC or block chaining, the decryptor cannot detect this. Block deletion would desynchronize the PRNG for subsequent blocks, but block reordering within a known PRNG-state window could go undetected if the attacker can predict or precompute the state differences.
-3. **Deterministic from key:** Given the key, the mask sequence for every block position is entirely determined. This is equivalent to a stream cipher with a block-structured keystream. The PRNG carries state forward, which is good, but the state evolution is a trivial addition — no entropy is introduced between blocks.
+3. **Deterministic from key:** Given the key, the mask sequence for every block position is entirely determined. This is equivalent to a stream cipher with a block-structured keystream. The PRNG carries state forward, which is good, but the state evolution is a trivial addition - no entropy is introduced between blocks.
 
 The document does not mention mode-of-operation weaknesses at all.
 
@@ -127,15 +127,15 @@ S(pBlock[k] || pBlock[k+1] ⊕ mask_k) = ciphertext window at k
 S(pBlock[k+1] || pBlock[k+2] ⊕ mask_{k+1}) = ciphertext window at k+1
 ```
 
-The shared byte `pBlock[k+1]` (after modification by step k) appears in both equations. If the S-box were known, this overlap provides a constraint that chains windows together. In a known-plaintext scenario with a candidate S-box, the entire forward-pass output can be verified step-by-step in O(127) operations — there is no "width" to the nonlinear barrier at any single step (only 16 bits).
+The shared byte `pBlock[k+1]` (after modification by step k) appears in both equations. If the S-box were known, this overlap provides a constraint that chains windows together. In a known-plaintext scenario with a candidate S-box, the entire forward-pass output can be verified step-by-step in O(127) operations - there is no "width" to the nonlinear barrier at any single step (only 16 bits).
 
-For differential cryptanalysis, the overlap means a differential at position k propagates with probability 1 to the input of position k+1 (via the shared byte). Only the S-box provides nonlinear resistance, and it operates on 16 bits — meaning the best differential probability per step is at most 2^-1 (for the average random 16-bit S-box, the max differential probability is approximately 2^-8 to 2^-10). Over 127 steps, this multiplies, but the *serial* structure means the attacker only needs to find a high-probability path through the chain.
+For differential cryptanalysis, the overlap means a differential at position k propagates with probability 1 to the input of position k+1 (via the shared byte). Only the S-box provides nonlinear resistance, and it operates on 16 bits - meaning the best differential probability per step is at most 2^-1 (for the average random 16-bit S-box, the max differential probability is approximately 2^-8 to 2^-10). Over 127 steps, this multiplies, but the *serial* structure means the attacker only needs to find a high-probability path through the chain.
 
 ### 2.6 Codebook Layer Analysis
 
 In `NoPermutation` mode (the default), `s_ConstructCodebook` initializes `s_rgCodebook` to identity `[0, 1, 2, ..., 65535]`. `InitSbox()` copies this identity to `m_rgSbox`. Then `PermuteSbox()` shuffles using the key PRNG.
 
-When `s_PermuteCodebook` is called with a separate key, it pre-shuffles the codebook before key setup. This means the S-box becomes `KeyShuffle(CodebookShuffle(identity))` — a composition of two permutations. Since permutation composition is itself a permutation, this is equivalent to a single different permutation. The codebook layer adds no structural security — it's equivalent to using a different key. It provides defense-in-depth only if the codebook key is independent of the main key.
+When `s_PermuteCodebook` is called with a separate key, it pre-shuffles the codebook before key setup. This means the S-box becomes `KeyShuffle(CodebookShuffle(identity))` - a composition of two permutations. Since permutation composition is itself a permutation, this is equivalent to a single different permutation. The codebook layer adds no structural security - it's equivalent to using a different key. It provides defense-in-depth only if the codebook key is independent of the main key.
 
 The document does not analyze the codebook layer.
 
@@ -143,7 +143,7 @@ The document does not analyze the codebook layer.
 
 `NoPermutation` is the default (`s_eBlockMode`). When enabled, `Permutation` mode adds a byte-level permutation (shuffle of the 128-byte block) after each round's forward+reverse passes. This permutation is key-dependent and shuffled per-block using `m_prngSBox`.
 
-The permutation layer would break the serial chain structure of the sliding window by rearranging bytes between rounds. This is architecturally significant — without it, the same byte positions interact with the same neighbors across all 3 rounds. With it, different bytes become neighbors in each round, dramatically improving diffusion quality.
+The permutation layer would break the serial chain structure of the sliding window by rearranging bytes between rounds. This is architecturally significant - without it, the same byte positions interact with the same neighbors across all 3 rounds. With it, different bytes become neighbors in each round, dramatically improving diffusion quality.
 
 **The default mode (NoPermutation) is the weaker mode.** The document does not discuss this trade-off.
 
@@ -158,7 +158,7 @@ The 32-byte key is split: bytes [0..15] → `m_prngSBox` (state + key), bytes [1
 More critically: the `m_prngSBox` seed determines the S-box (used for all blocks), while `m_prngMask` seed determines the mask stream. These are independent. An attacker could:
 1. Attack `m_prngSBox` (127 bits) to recover the S-box
 2. Then attack `m_prngMask` (127 bits) to recover the mask stream
-3. Total work: 2^127 + 2^127 ≈ 2^128 — NOT 2^254
+3. Total work: 2^127 + 2^127 ≈ 2^128 - NOT 2^254
 
 This is a classic **key decomposition attack**. The two halves of the key are used independently and can be attacked independently. The effective security level is **~128 bits**, not 256.
 
@@ -176,7 +176,7 @@ s_ReverseSmForwardPass(...)   // undoes one pass using masks in reverse
 s_ReverseSmReversePass(...)   // undoes other pass using masks in reverse
 ```
 
-The decrypt round processes the mask array in strictly reverse order. Because the PRNG is `state += key`, the mask sequence is an arithmetic progression. In reverse, it's still an arithmetic progression (with negated step). This means the decrypt mask sequence has identical algebraic structure to the encrypt mask sequence — there is no asymmetry that would distinguish the two. An attacker analyzing the cipher algebraically sees the same linear structure in both directions.
+The decrypt round processes the mask array in strictly reverse order. Because the PRNG is `state += key`, the mask sequence is an arithmetic progression. In reverse, it's still an arithmetic progression (with negated step). This means the decrypt mask sequence has identical algebraic structure to the encrypt mask sequence - there is no asymmetry that would distinguish the two. An attacker analyzing the cipher algebraically sees the same linear structure in both directions.
 
 ### 3.3 Block Boundary Fixed Points
 
@@ -192,7 +192,7 @@ Over 3 rounds, byte[127] receives only 3 S-box applications (one per round, alwa
 
 ### What the cipher genuinely does well:
 
-1. **Large block size (1024 bits) with efficient diffusion.** The sliding-window design achieves full-block dependency in a single pass using only sequential memory access. This is cache-friendly and efficient. The 128-byte block makes many classical attacks (birthday-bound ECB collisions at 2^64 blocks for 128-bit blocks) irrelevant — the birthday bound is 2^512.
+1. **Large block size (1024 bits) with efficient diffusion.** The sliding-window design achieves full-block dependency in a single pass using only sequential memory access. This is cache-friendly and efficient. The 128-byte block makes many classical attacks (birthday-bound ECB collisions at 2^64 blocks for 128-bit blocks) irrelevant - the birthday bound is 2^512.
 
 2. **Key-dependent S-box.** Unlike AES's fixed S-box, the key-dependent S-box means an attacker cannot precompute the DDT or LAT. They must recover the key (or S-box) first. This raises the bar for offline differential/linear cryptanalysis.
 
@@ -211,7 +211,7 @@ Over 3 rounds, byte[127] receives only 3 S-box applications (one per round, alwa
 ### For Rejewski (Statistical Analyst):
 1. **Avalanche measurement:** For a randomly-keyed SPM instance, flip one input bit and measure the output Hamming distance. Does the cipher achieve the ideal 512-bit (50%) avalanche after 1 round? After 3 rounds? Measure separately for bit flips at position 0, position 64, and position 127 to detect boundary effects.
 2. **S-box quality under PRNG generation:** Generate 1000 S-boxes using the additive PRNG with random seeds. Compute the DDT and LAT for each. What is the distribution of max differential probability and max linear bias? Compare to the expected values for truly random 16-bit permutations.
-3. **PRNG output correlation:** The additive PRNG produces 4 × 16-bit words per state advance. Consecutive 16-bit outputs within the same state are *subwords of the same 64-bit value*. Measure the correlation between consecutive mask values — are they independent?
+3. **PRNG output correlation:** The additive PRNG produces 4 × 16-bit words per state advance. Consecutive 16-bit outputs within the same state are *subwords of the same 64-bit value*. Measure the correlation between consecutive mask values - are they independent?
 
 ### For Friedman (Algebraic Analyst):
 1. **Differential characteristic search:** What is the best 1-round differential characteristic? Given the serial sliding-window structure, can a local differential (affecting 2-3 bytes) propagate with high probability through the chain? The 1-byte overlap means differentials are NOT independent across positions.

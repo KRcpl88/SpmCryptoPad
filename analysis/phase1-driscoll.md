@@ -1,4 +1,4 @@
-# Phase 1: Driscoll — Attack Surface Assessment of cryptanalysis.md
+# Phase 1: Driscoll - Attack Surface Assessment of cryptanalysis.md
 
 **Analyst:** Driscoll (Attack Specialist)
 **Date:** 2025-07-15
@@ -8,41 +8,41 @@
 
 ## 1. Accuracy Assessment
 
-### Finding #1 — S-box State Space (2^127 vs 2^954,009): **ACCURATE**
+### Finding #1 - S-box State Space (2^127 vs 2^954,009): **ACCURATE**
 
 The PRNG `m_prngSBox` has 64-bit state + 63-bit effective key (LSB forced to 1) = 127 bits of seed entropy. The permutation space of a 16-bit S-box is log₂(65536!) ≈ 954,009 bits. The claim that only an infinitesimal fraction of permutations are reachable is mathematically correct.
 
 **Additional note:** The S-box generation uses a *naive* shuffle (swap each element with a uniformly random element from the full array), not proper Fisher-Yates (which swaps with elements from the shrinking tail). A single pass of naive shuffle produces a biased distribution. However, with 16 passes, convergence toward uniformity over the reachable 2^127 permutations is strong. This is a terminology inaccuracy in the document ("Fisher-Yates shuffled") but not a security concern given 16 passes.
 
-### Finding #2 — Plaintext File-Size Leakage: **ACCURATE**
+### Finding #2 - Plaintext File-Size Leakage: **ACCURATE**
 
 Not independently verified from file-format code, but consistent with the described architecture. Low severity is appropriate.
 
-### Non-Finding #1 — Round Count Comparison: **INCOMPLETE / MISLEADING**
+### Non-Finding #1 - Round Count Comparison: **INCOMPLETE / MISLEADING**
 
 The claim that "3 SPM rounds = 6 full diffusion sweeps ≈ 24+ AES diffusion layers" conflates *diffusion* (bit-spreading) with *overall security*. The analysis is correct that the sliding-window cascade achieves full byte diffusion in a single directional pass. However:
 
 - **Diffusion ≠ resistance to differential/linear cryptanalysis.** AES round counts are chosen for provable resistance to differential and linear attacks, not just diffusion.
 - The document correctly notes that "resistance to differential and linear cryptanalysis at this round count is formally unknown," but this critical caveat is buried in recommendation text while the bold comparison to AES is in the main analysis. The framing implies equivalence where none has been demonstrated.
-- The sliding-window structure may or may not provide strong resistance — it simply hasn't been analyzed using standard cryptanalytic methods.
+- The sliding-window structure may or may not provide strong resistance - it simply hasn't been analyzed using standard cryptanalytic methods.
 
 **Verdict:** The diffusion claim is accurate. The security equivalence to "24+ AES layers" is unsupported and should be removed or heavily qualified.
 
-### Non-Finding #2 — PRNG Not Independently Exploitable: **ACCURATE**
+### Non-Finding #2 - PRNG Not Independently Exploitable: **ACCURATE**
 
 Correct that the Weyl PRNG's weakness (state recoverable from 8 consecutive 16-bit outputs) is masked by the key-dependent S-box. Mask values are consumed inside `S(block[k:k+2] XOR mask)`, making direct extraction infeasible without knowing S. This is a compounding factor, not a primary vector.
 
-### Non-Finding #3 — Password Out of Scope: **ACCURATE**
+### Non-Finding #3 - Password Out of Scope: **ACCURATE**
 
 Consistent with standing orders.
 
-### Non-Finding #4 — Nonce Entropy 30–50 bits: **ACCURATE**
+### Non-Finding #4 - Nonce Entropy 30–50 bits: **ACCURATE**
 
 The range estimate and collision probability calculations are correct. Per standing orders, nonce analysis is secondary to core algorithm.
 
 ### Cipher Strengths Section: **PARTIALLY ACCURATE**
 
-The description of the sliding-window cascade and per-round diffusion is technically correct. However, the claim that "key-dependent 16-bit S-box provides strong local nonlinearity" is stated without evidence. For a random 16-bit permutation, the expected maximum entry in the difference distribution table (DDT) is ~6–8 (out of 65536). This is indeed excellent nonlinearity — but the S-box is not drawn uniformly from permutation space; it's drawn from a 2^127 subset via a biased (naive) shuffle. The nonlinearity properties of this specific subset have not been characterized.
+The description of the sliding-window cascade and per-round diffusion is technically correct. However, the claim that "key-dependent 16-bit S-box provides strong local nonlinearity" is stated without evidence. For a random 16-bit permutation, the expected maximum entry in the difference distribution table (DDT) is ~6–8 (out of 65536). This is indeed excellent nonlinearity - but the S-box is not drawn uniformly from permutation space; it's drawn from a 2^127 subset via a biased (naive) shuffle. The nonlinearity properties of this specific subset have not been characterized.
 
 ---
 
@@ -58,7 +58,7 @@ Each block encryption applies 759 cascaded operations of the form `block[k:k+2] 
 
 With N known pairs at the same block position, the attacker builds a partial codebook of the fixed 128-byte → 128-byte permutation. Since the domain has 2^1024 elements, even 2^40 pairs covers a negligible fraction. The codebook itself reveals nothing about S or the masks without structural decomposition.
 
-**Key insight — same-ciphertext collision:** If two different plaintexts P and P' at the same block position produce identical ciphertexts, this implies a collision in the encryption function, which is impossible (it's a permutation composed of permutations). So no collision-based analysis applies.
+**Key insight - same-ciphertext collision:** If two different plaintexts P and P' at the same block position produce identical ciphertexts, this implies a collision in the encryption function, which is impossible (it's a permutation composed of permutations). So no collision-based analysis applies.
 
 **Feasibility:** No known technique extracts S-box or mask information from known P/C pairs alone when the intermediate cascade states are hidden. The 759-step cascade with overlapping windows creates a deeply nested dependency that resists layer-peeling.
 
@@ -69,28 +69,28 @@ With N known pairs at the same block position, the attacker builds a partial cod
 
 **Setup:** Attacker chooses plaintexts and observes ciphertexts, all at block position 0 (same mask sequence).
 
-**Attack 1 — Zero block:** Encrypting the all-zero 128-byte block. Step 0 computes `S[0x0000 XOR m_0] = S[m_0]`. This writes the S-box output for the unknown input `m_0` to bytes 0–1. Step 1 reads the modified byte 1 along with the original byte 2 (= 0x00). The cascade continues, so the final ciphertext is a deeply nested function of S and all 759 masks. **No useful information is directly extractable.**
+**Attack 1 - Zero block:** Encrypting the all-zero 128-byte block. Step 0 computes `S[0x0000 XOR m_0] = S[m_0]`. This writes the S-box output for the unknown input `m_0` to bytes 0–1. Step 1 reads the modified byte 1 along with the original byte 2 (= 0x00). The cascade continues, so the final ciphertext is a deeply nested function of S and all 759 masks. **No useful information is directly extractable.**
 
-**Attack 2 — Single-position variation (most interesting CPA):**
+**Attack 2 - Single-position variation (most interesting CPA):**
 
 Choose 65536 plaintexts that differ only in bytes 0:1 (values 0x0000 through 0xFFFF), with bytes 2–127 fixed (e.g., all zero).
 
 - Step 0 for plaintext with P[0:1] = x computes: `S[x XOR m_0]`, writing to bytes 0–1.
 - Step 1 reads byte 1 (low byte of S[x XOR m_0]) concatenated with byte 2 (fixed = 0x00).
 - **Critical observation:** If two inputs x and x' produce `S[x XOR m_0]` and `S[x' XOR m_0]` with the same low byte, then from step 1 onward the cascades are *identical* (since byte 2+ are all zero/fixed). The ciphertexts C and C' would differ only in byte 0.
-- By grouping the 65536 ciphertexts by the equality of C[1:127], the attacker partitions the 65536 S-box outputs by their low byte — recovering the **low-byte equivalence classes** of S (modulo the unknown mask m_0).
+- By grouping the 65536 ciphertexts by the equality of C[1:127], the attacker partitions the 65536 S-box outputs by their low byte - recovering the **low-byte equivalence classes** of S (modulo the unknown mask m_0).
 
 **What this reveals:** The partition of 65536 inputs into 256 groups of ~256 elements each, corresponding to S-box outputs sharing a low byte. This is real structural information about S, but:
 1. Only the low byte is recovered, not the full 16-bit output.
 2. The partition is shifted by the unknown m_0.
-3. Extending this to step 1 requires controlling the cascade, which is circular — you'd need to know the S-box to predict step 0's output.
+3. Extending this to step 1 requires controlling the cascade, which is circular - you'd need to know the S-box to predict step 0's output.
 4. Repeating for all 127 forward-pass positions is infeasible because the cascade means positions beyond 0 can't be independently varied.
 
-**Attack 3 — Differential chosen-plaintext:**
+**Attack 3 - Differential chosen-plaintext:**
 
-Choose pairs (P, P XOR Δ) where Δ is nonzero only in bytes 0:1. The input difference at step 0 is `(x XOR m_0) XOR ((x XOR Δ[0:1]) XOR m_0) = Δ[0:1]` — the mask cancels! So the S-box input difference is always Δ[0:1] regardless of the unknown mask.
+Choose pairs (P, P XOR Δ) where Δ is nonzero only in bytes 0:1. The input difference at step 0 is `(x XOR m_0) XOR ((x XOR Δ[0:1]) XOR m_0) = Δ[0:1]` - the mask cancels! So the S-box input difference is always Δ[0:1] regardless of the unknown mask.
 
-The output difference `S[x XOR m_0] XOR S[x XOR m_0 XOR Δ]` depends on the specific S-box and the absolute value of `x XOR m_0`. Collecting many such pairs for the same Δ gives the *differential profile* of S for that input difference — one row of the DDT.
+The output difference `S[x XOR m_0] XOR S[x XOR m_0 XOR Δ]` depends on the specific S-box and the absolute value of `x XOR m_0`. Collecting many such pairs for the same Δ gives the *differential profile* of S for that input difference - one row of the DDT.
 
 However, the cascade complicates observation: the output difference at step 0 propagates through 758 subsequent steps. Observing the *final* ciphertext difference doesn't directly reveal the step-0 output difference.
 
@@ -209,7 +209,7 @@ The system is massively over-determined if we have multiple known P/C pairs, but
 
 **Setup:** At a fixed block position (e.g., block 0 with same key and no nonce), encryption is a fixed permutation on 128-byte blocks. An attacker who collects enough pairs builds a lookup table.
 
-**Analysis:** The block space is 2^1024. No practical amount of data covers a meaningful fraction. Even for 1-byte variations at a fixed position, the attacker needs 256 pairs to fully characterize one byte's behavior — but the cascade means one byte's behavior depends on all other bytes.
+**Analysis:** The block space is 2^1024. No practical amount of data covers a meaningful fraction. Even for 1-byte variations at a fixed position, the attacker needs 256 pairs to fully characterize one byte's behavior - but the cascade means one byte's behavior depends on all other bytes.
 
 **Feasibility:** Completely impractical. The 128-byte block size makes codebook attacks irrelevant.
 
@@ -248,7 +248,7 @@ The system is massively over-determined if we have multiple known P/C pairs, but
 - The key.
 
 **Why it doesn't extend:**
-- Step 1's input depends on step 0's output (the overlapping byte). To isolate step 1, you'd need to control the input to step 1, which requires knowing S[x XOR m_0]'s low byte — creating a circular dependency.
+- Step 1's input depends on step 0's output (the overlapping byte). To isolate step 1, you'd need to control the input to step 1, which requires knowing S[x XOR m_0]'s low byte - creating a circular dependency.
 - The cascade prevents the attacker from independently probing any S-box position beyond the first.
 
 **Complexity:** O(2^16) chosen plaintexts, O(2^16) computation to partition.
@@ -269,17 +269,17 @@ The system is massively over-determined if we have multiple known P/C pairs, but
 | **Meet-in-the-middle** | O(2^255) | 1 known P/C pair | No | S-box and masks entangled at every step; no clean split |
 | **Algebraic** | O(2^255) | 1 known P/C pair | No | System of ~12K degree-16 equations; beyond solver capability |
 | **Codebook** | O(2^1024) | 2^1024 blocks | No | Block space too large |
-| **Ciphertext manipulation** | O(1) | 1 ciphertext | **Yes** | No authentication — blocks can be reordered, truncated, or modified undetectably |
+| **Ciphertext manipulation** | O(1) | 1 ciphertext | **Yes** | No authentication - blocks can be reordered, truncated, or modified undetectably |
 
 ---
 
 ## 5. New Findings
 
-### NF-1: Ciphertext Malleability — Most Practical Real-World Attack (MEDIUM-HIGH)
+### NF-1: Ciphertext Malleability - Most Practical Real-World Attack (MEDIUM-HIGH)
 
 The document notes "no ciphertext authentication" in passing but does not fully explore the consequences. Since there is no MAC, HMAC, or authenticated encryption mode:
 
-1. **Block reordering:** An attacker can swap ciphertext blocks. Each block decrypts independently given the PRNG state, but the PRNG state for decryption is computed sequentially. Swapping blocks would cause incorrect PRNG states for decryption, producing garbage — which means the attack is *denial-of-service* rather than meaningful content manipulation.
+1. **Block reordering:** An attacker can swap ciphertext blocks. Each block decrypts independently given the PRNG state, but the PRNG state for decryption is computed sequentially. Swapping blocks would cause incorrect PRNG states for decryption, producing garbage - which means the attack is *denial-of-service* rather than meaningful content manipulation.
 
 2. **Block substitution across messages:** If the attacker has two ciphertexts encrypted with the same key (and no nonce), they can substitute block N from message A into message B at position N. The PRNG state at position N is deterministic (depends only on the key and N), so the substituted block would decrypt correctly. **This enables cut-and-paste attacks across same-key messages.**
 
@@ -310,7 +310,7 @@ The 256-bit key splits cleanly into two independent 128-bit halves:
 - Bytes 0–15 → S-box PRNG (127 effective bits, determines S-box)
 - Bytes 16–31 → Mask PRNG (127 effective bits, determines mask stream)
 
-While this doesn't enable MITM (both halves are used in every step), it does mean an attacker who somehow learns the S-box independently reduces the remaining search space from 2^254 to 2^127 — a dramatic reduction.
+While this doesn't enable MITM (both halves are used in every step), it does mean an attacker who somehow learns the S-box independently reduces the remaining search space from 2^254 to 2^127 - a dramatic reduction.
 
 **Scenario:** If a side-channel attack leaks S-box entries (e.g., cache-timing attacks on the 128 KB S-box table during lookup), the attacker could reconstruct S and then brute-force only the mask PRNG (2^127 operations). This is not a cryptanalytic attack per se, but the key architecture's clean split means that partial key compromise has outsized impact.
 
@@ -330,10 +330,10 @@ This is not unique to this cipher (AES round keys are also in memory), but the m
 
 3. **For the Diffusion Analyst:** The document claims full block diffusion per round. Can you empirically measure the avalanche effect? Specifically: encrypt 1000 random blocks, flip one bit, re-encrypt, and measure the Hamming distance of the ciphertext. Report the mean and standard deviation after 1, 2, and 3 rounds. Ideal is mean = 512 bits (half of 1024) with low variance.
 
-4. **For the Implementation Analyst:** The `s_EncryptBlock` function signature accepts `pPrngSBox` but in `NoPermutation` mode it is never used. Does the compiler optimize this away, or does the unused PRNG state still advance? Verify that `m_prngSBox` state does NOT change during encryption in `NoPermutation` mode — if it does, the S-box PRNG state after encrypting N blocks would differ from the fresh state, which matters for multi-block analysis.
+4. **For the Implementation Analyst:** The `s_EncryptBlock` function signature accepts `pPrngSBox` but in `NoPermutation` mode it is never used. Does the compiler optimize this away, or does the unused PRNG state still advance? Verify that `m_prngSBox` state does NOT change during encryption in `NoPermutation` mode - if it does, the S-box PRNG state after encrypting N blocks would differ from the fresh state, which matters for multi-block analysis.
 
 5. **For the Protocol Analyst:** How is the nonce mixed into the key? If the nonce is concatenated or XORed with the password-derived key before `SetKeys()`, the effective key space for the S-box and mask PRNGs may be smaller than 2^127 each (depending on how nonce bits distribute across the two PRNG key halves). This directly impacts the brute-force complexity.
 
 ---
 
-*End of Phase 1 Attack Assessment — Driscoll*
+*End of Phase 1 Attack Assessment - Driscoll*

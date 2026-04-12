@@ -1,12 +1,12 @@
 # Phase 3: Driscoll Reviews Turing
 
 **Reviewer:** Driscoll (Attack Specialist)
-**Subject:** Turing §3.1 — Key Decomposition Attack at 2^128
+**Subject:** Turing §3.1 - Key Decomposition Attack at 2^128
 **Date:** 2025-07-15
 
 ---
 
-## 1. Key Decomposition Attack — Step-by-Step Validation
+## 1. Key Decomposition Attack - Step-by-Step Validation
 
 ### 1.1 Turing's Claim (§3.1)
 
@@ -40,7 +40,7 @@ The mask PRNG (`CSimplePrng64`) produces 16-bit values by slicing a 64-bit state
 
 Turing's attack hinges on step 2: given candidate S-box S, known plaintext P, and known ciphertext C, can we determine whether S is correct **without brute-forcing the mask PRNG seed**?
 
-#### Attempt 1 — Forward Layer Peeling
+#### Attempt 1 - Forward Layer Peeling
 
 Given S and P, step k=0 of round 1 forward pass:
 ```
@@ -52,24 +52,24 @@ This is a function of the single unknown `m_0`. For each of 2^16 candidate value
 block[1:2] = S[(output_byte_1_from_step_0 || P[2]) XOR m_1]
 ```
 
-`output_byte_1_from_step_0` depends on `m_0`. Each subsequent step depends on all prior masks through the cascading overlap. After 4 steps, the block state at bytes 0–3 is a function of `(m_0, m_1, m_2, m_3)` — i.e., the full 64-bit initial PRNG state `s`.
+`output_byte_1_from_step_0` depends on `m_0`. Each subsequent step depends on all prior masks through the cascading overlap. After 4 steps, the block state at bytes 0–3 is a function of `(m_0, m_1, m_2, m_3)` - i.e., the full 64-bit initial PRNG state `s`.
 
 But this forward-peel only gives us partial intermediate state, NOT the ciphertext C. To reach C, we need all 759 masks, which requires knowing both `s` and `k` (the full 127-bit mask seed).
 
 **Verdict: Forward peeling does not determine masks without the full seed.**
 
-#### Attempt 2 — Backward Peeling from Ciphertext
+#### Attempt 2 - Backward Peeling from Ciphertext
 
 The last encryption operation was step k=0 of round 3's reverse pass (mask `m_758`):
 ```
 C[0:1] = S[prev[0:1] XOR m_758]
 ```
 
-To invert: `prev[0:1] = S^{-1}(C[0:1]) XOR m_758`. But both `prev[0:1]` and `m_758` are unknown — one equation, two unknowns. The same circularity applies to every step peeled backward.
+To invert: `prev[0:1] = S^{-1}(C[0:1]) XOR m_758`. But both `prev[0:1]` and `m_758` are unknown - one equation, two unknowns. The same circularity applies to every step peeled backward.
 
 **Verdict: Backward peeling is equally blocked.**
 
-#### Attempt 3 — Determine Masks from Known Block States
+#### Attempt 3 - Determine Masks from Known Block States
 
 If we knew the block state before AND after each step, we could compute each mask:
 ```
@@ -80,7 +80,7 @@ But we only observe P (before step 0) and C (after step 758). The 759 intermedia
 
 **Verdict: Requires exactly the information we lack.**
 
-#### Attempt 4 — Exhaustive Mask Seed Search per S-box Candidate
+#### Attempt 4 - Exhaustive Mask Seed Search per S-box Candidate
 
 For each candidate S-box:
 - For each candidate mask seed (2^127 possibilities):
@@ -90,13 +90,13 @@ For each candidate S-box:
 
 This WORKS but costs **2^127 per S-box candidate**. For 2^127 S-box candidates, total = **2^127 × 2^127 = 2^254**.
 
-#### Attempt 5 — Early Rejection of Wrong S-boxes
+#### Attempt 5 - Early Rejection of Wrong S-boxes
 
-Could we reject a wrong S-box quickly? For a wrong S-box, NO mask seed will produce C from P. But to confirm this, we'd need to exhaustively search all 2^127 mask seeds — which is the full cost.
+Could we reject a wrong S-box quickly? For a wrong S-box, NO mask seed will produce C from P. But to confirm this, we'd need to exhaustively search all 2^127 mask seeds - which is the full cost.
 
-Could we test a small random sample of mask seeds? If we test T random seeds per S-box candidate, the probability of hitting the correct seed for the correct S-box is T/2^127. To find the key with good probability, we need T × 2^127 ≈ 2^127 total trials — the same as brute force over the mask key for a single S-box. This provides zero improvement to the overall 2^254 cost.
+Could we test a small random sample of mask seeds? If we test T random seeds per S-box candidate, the probability of hitting the correct seed for the correct S-box is T/2^127. To find the key with good probability, we need T × 2^127 ≈ 2^127 total trials - the same as brute force over the mask key for a single S-box. This provides zero improvement to the overall 2^254 cost.
 
-#### Attempt 6 — PRNG Structure Exploitation
+#### Attempt 6 - PRNG Structure Exploitation
 
 The mask PRNG has structure: masks come in groups of 4 (16-bit slices of a 64-bit state), and consecutive states differ by an additive constant `k`.
 
@@ -128,7 +128,7 @@ No known algorithmic technique (SAT solvers, Gröbner bases, linearization, meet
 
 Turing states: *"If the S-box is wrong, inconsistency will be detected within the first few sliding-window steps."*
 
-This is incorrect. The "inconsistency" Turing describes — that derived mask values won't satisfy the PRNG structure — requires first DERIVING the mask values. But deriving mask values at step k requires knowing the block state at step k, which depends on all prior masks. You cannot derive masks without already knowing the masks. The cascade creates a chicken-and-egg problem that has no efficient resolution.
+This is incorrect. The "inconsistency" Turing describes - that derived mask values won't satisfy the PRNG structure - requires first DERIVING the mask values. But deriving mask values at step k requires knowing the block state at step k, which depends on all prior masks. You cannot derive masks without already knowing the masks. The cascade creates a chicken-and-egg problem that has no efficient resolution.
 
 The only way to test "mask consistency" is:
 1. Assume specific mask values (= assume PRNG seed)
@@ -141,10 +141,10 @@ This is brute force over the mask seed, costing O(2^127) per S-box candidate.
 
 The 2^128 attack would be valid IF any of these held:
 - **No cascade**: if each S-box step were independent (no overlapping window), masks could be determined step-by-step in O(759). But the overlap creates inter-step dependencies.
-- **Linear mixing**: if the S-box were linear (e.g., matrix multiplication over GF(2)), the cascade would be a system of linear equations solvable in polynomial time. But S is a random 16-bit permutation — maximally nonlinear.
+- **Linear mixing**: if the S-box were linear (e.g., matrix multiplication over GF(2)), the cascade would be a system of linear equations solvable in polynomial time. But S is a random 16-bit permutation - maximally nonlinear.
 - **Known intermediate state**: if ANY intermediate block state (between any two steps) were known, the cascade could be split and solved more efficiently. But all 759 intermediate states are hidden.
 
-None of these conditions hold. The cipher's design — cascading nonlinear S-box with overlapping windows — is precisely what prevents the decomposition attack.
+None of these conditions hold. The cipher's design - cascading nonlinear S-box with overlapping windows - is precisely what prevents the decomposition attack.
 
 ---
 
@@ -154,9 +154,9 @@ None of these conditions hold. The cipher's design — cascading nonlinear S-box
 
 | Turing's Claim | Driscoll's Assessment |
 |---|---|
-| S-box search: 2^127 | **Correct** — 2^127 candidate S-boxes exist |
-| Per-candidate verification: O(1) | **WRONG** — verification requires O(2^127) mask search |
-| Total: 2^127 + 2^127 ≈ 2^128 | **Incorrect** — actual total is O(2^254) |
+| S-box search: 2^127 | **Correct** - 2^127 candidate S-boxes exist |
+| Per-candidate verification: O(1) | **WRONG** - verification requires O(2^127) mask search |
+| Total: 2^127 + 2^127 ≈ 2^128 | **Incorrect** - actual total is O(2^254) |
 
 ### 3.2 The Structural Vulnerability IS Real (But Not Exploitable Purely Cryptanalytically)
 
@@ -178,9 +178,9 @@ This is a valid architectural concern (as I noted in my Phase 1 NF-4), but it re
 
 ### 3.4 Strongest Pure Cryptanalytic Attack
 
-**O(2^254) — exhaustive key search remains the strongest known attack under full-key, known-plaintext conditions.**
+**O(2^254) - exhaustive key search remains the strongest known attack under full-key, known-plaintext conditions.**
 
-The cascade barrier — 759 nonlinear steps with overlapping windows — prevents decomposition, layer-peeling, meet-in-the-middle, differential, linear, and algebraic attacks from achieving sub-brute-force complexity.
+The cascade barrier - 759 nonlinear steps with overlapping windows - prevents decomposition, layer-peeling, meet-in-the-middle, differential, linear, and algebraic attacks from achieving sub-brute-force complexity.
 
 ---
 
@@ -191,7 +191,7 @@ If a side-channel leaks the S-box (e.g., cache-timing analysis of the 128 KB S-b
 ### 4.1 Recovering the Mask Key
 
 1. **Obtain S-box**: 65536 × 2-byte entries = 128 KB. A cache-timing side-channel during one encryption is sufficient.
-2. **Compute S^{-1}**: O(65536) — trivial.
+2. **Compute S^{-1}**: O(65536) - trivial.
 3. **Obtain one known P/C pair**: 128 bytes each.
 4. **Search mask PRNG seed**: For each candidate (s, k) pair (127-bit space):
    - Generate 759 masks from PRNG
@@ -231,7 +231,7 @@ I concur with the following Turing findings:
 - **§2.2 (No block chaining)**: ECB-like behavior is a real concern. My NF-2 independently identified this.
 - **§2.3 (No authentication)**: Confirmed. My NF-1 detailed cross-message block substitution as a zero-computation attack.
 - **§3.3 (Boundary byte weakness)**: Byte 127 receiving only 3 S-box applications (1 per round) vs ~6 for interior bytes is a valid structural asymmetry.
-- **§2.5 (Sliding-window overlap)**: The 1-byte overlap analysis is correct — the shared byte chains consecutive S-box lookups, creating exploitable structure IF the S-box is known.
+- **§2.5 (Sliding-window overlap)**: The 1-byte overlap analysis is correct - the shared byte chains consecutive S-box lookups, creating exploitable structure IF the S-box is known.
 
 ### 5.2 Correction to Turing §2.1
 
@@ -241,9 +241,9 @@ This is the core error. As demonstrated in §§1–2 above, validation requires 
 
 ### 5.3 Correction to Turing §3.2 (Decryption Symmetry)
 
-Turing notes that the decrypt mask sequence is an arithmetic progression with negated step, identical in structure to the encrypt sequence. This is correct but has no cryptanalytic implication — the attacker doesn't observe the decrypt sequence, and the algebraic structure of the masks is already known from the PRNG definition.
+Turing notes that the decrypt mask sequence is an arithmetic progression with negated step, identical in structure to the encrypt sequence. This is correct but has no cryptanalytic implication - the attacker doesn't observe the decrypt sequence, and the algebraic structure of the masks is already known from the PRNG definition.
 
-### 5.4 Turing's Key Questions for Driscoll (§5, Q1–Q4) — Brief Responses
+### 5.4 Turing's Key Questions for Driscoll (§5, Q1–Q4) - Brief Responses
 
 **Q1 (Known-plaintext minimum work):** O(2^254) with current techniques. The cascade hides intermediates.
 
@@ -259,14 +259,14 @@ Turing notes that the decrypt mask sequence is an arithmetic progression with ne
 
 | Turing Claim | Verdict |
 |---|---|
-| Key decomposition to 2^128 | **REFUTED** — verification bottleneck is O(2^127), making total O(2^254) |
-| S-box/mask independence is structural weakness | **CONFIRMED** — but exploitable only via side-channel, not pure cryptanalysis |
-| Effective security is ~128 bits | **INCORRECT** — effective security is ~254 bits against known-plaintext attacks |
-| S-box verifiable in O(1) with known P/C | **INCORRECT** — cascade prevents polynomial-time verification |
-| Boundary byte asymmetry | **CONFIRMED** — byte 127 weaker than interior |
-| No block chaining / no authentication | **CONFIRMED** — most practical real-world vulnerability |
+| Key decomposition to 2^128 | **REFUTED** - verification bottleneck is O(2^127), making total O(2^254) |
+| S-box/mask independence is structural weakness | **CONFIRMED** - but exploitable only via side-channel, not pure cryptanalysis |
+| Effective security is ~128 bits | **INCORRECT** - effective security is ~254 bits against known-plaintext attacks |
+| S-box verifiable in O(1) with known P/C | **INCORRECT** - cascade prevents polynomial-time verification |
+| Boundary byte asymmetry | **CONFIRMED** - byte 127 weaker than interior |
+| No block chaining / no authentication | **CONFIRMED** - most practical real-world vulnerability |
 
-**Bottom line:** The cipher's effective security against pure cryptanalytic attack is **O(2^254)**, not O(2^128). Turing correctly identified the key's structural independence but incorrectly assumed the S-box could be verified in polynomial time. The 759-step cascading S-box with overlapping windows is the cipher's primary defense — it prevents not only layer-peeling but also decomposition attacks by making the two key halves cryptanalytically inseparable despite being structurally independent.
+**Bottom line:** The cipher's effective security against pure cryptanalytic attack is **O(2^254)**, not O(2^128). Turing correctly identified the key's structural independence but incorrectly assumed the S-box could be verified in polynomial time. The 759-step cascading S-box with overlapping windows is the cipher's primary defense - it prevents not only layer-peeling but also decomposition attacks by making the two key halves cryptanalytically inseparable despite being structurally independent.
 
 ---
 

@@ -1,4 +1,4 @@
-# QV Phase 3 — Consensus Report
+# QV Phase 3 - Consensus Report
 
 **Date:** 2025-07-15
 **Coordinator:** Phase 3 Consensus Panel
@@ -18,24 +18,24 @@ Phase 2 cross-review resolved all disputes across 32 findings. This Phase 3 repo
 
 ## Ratified Corrections
 
-### Critical (factual errors — must fix)
+### Critical (factual errors - must fix)
 
 | # | Finding | Correction | Consensus Basis |
 |---|---------|-----------|----------------|
-| 1 | Q10: Reverse S-box in qubit table | Remove — uncomputation makes it free. Total: ~2.1M → ~1.05M qubits | UPHELD unanimously. Standard quantum computing practice (adjoint/dagger). |
+| 1 | Q10: Reverse S-box in qubit table | Remove - uncomputation makes it free. Total: ~2.1M → ~1.05M qubits | UPHELD unanimously. Standard quantum computing practice (adjoint/dagger). |
 | 2 | Q28: Algebraic degree "~2^{16}−1" | Change to "15 (the maximum n−1 for any n-bit permutation)." Qualitative argument preserved. | UPHELD. Multivariate ANF degree bounded by n−1. |
 | 3 | Q21: "Quadruples per bit" scaling | Replace with: 512× increase for 8→16 bit jump. Q(b)=b×2^b; ratio approaches 2× per bit for large b. | UPHELD. Mathematical error. |
-| 4 | Q6/Q8: AES gate cost "~2^{15}" | Revise to "~2^{17}–2^{19}" cipher-evaluation T-gates. Grassl's 2^{27.5} is full Grover iteration, not cipher-only. | PARTIALLY REFUTED — paper low by ~2^{2}–2^{4}, not Rejewski's claimed 2^{12.5}. |
+| 4 | Q6/Q8: AES gate cost "~2^{15}" | Revise to "~2^{17}–2^{19}" cipher-evaluation T-gates. Grassl's 2^{27.5} is full Grover iteration, not cipher-only. | PARTIALLY REFUTED - paper low by ~2^{2}–2^{4}, not Rejewski's claimed 2^{12.5}. |
 
-### Important (missing analysis — must add)
+### Important (missing analysis - must add)
 
 | # | Finding | Correction |
 |---|---------|-----------|
-| 5 | Hybrid attack omission | Add subsection: hybrid reduces qubits to ~3,000–5,000 but total work O(2^{190+}) — far worse than full Grover's O(2^{163}). Classical loop: ~10^{26} years. |
+| 5 | Hybrid attack omission | Add subsection: hybrid reduces qubits to ~3,000–5,000 but total work O(2^{190+}) - far worse than full Grover's O(2^{163}). Classical loop: ~10^{26} years. |
 | 6 | Q18: "2 million×" headline | Revise to "~100,000–500,000× more gates per oracle evaluation." |
 | 7 | Q5: AES qubit AES-128/256 confusion | Add note: ~264 qubits applies to AES-128; AES-256 requires ~320–400 qubits. |
 
-### Moderate (imprecise claims — should fix)
+### Moderate (imprecise claims - should fix)
 
 | # | Finding | Correction |
 |---|---------|-----------|
@@ -45,7 +45,7 @@ Phase 2 cross-review resolved all disputes across 32 findings. This Phase 3 repo
 | 11 | Q24: Kuwakado & Morii reference | Add [25] for 2012 ISITA Even-Mansour paper. Update §5.5 citation. |
 | 12 | Q27: "23 equations" attribution | Change citation from [8] to [7] (Courtois & Pieprzyk 2002). |
 
-### Minor (transparency — recommended)
+### Minor (transparency - recommended)
 
 | # | Finding | Correction |
 |---|---------|-----------|
@@ -55,13 +55,13 @@ Phase 2 cross-review resolved all disputes across 32 findings. This Phase 3 repo
 
 ---
 
-## Preserved Claims (validated — do NOT change)
+## Preserved Claims (validated - do NOT change)
 
-- "The 16-bit S-box was designed explicitly as a quantum countermeasure" — correct and well-supported
-- "SPM is immune to Simon's algorithm" — Phase 2 REFUTED the challenge (Q25, +10 points); acceptable informal usage
-- DDT/LAT quantum invariance — Phase 2 REFUTED the challenge (Q30, +10 points); trivially true mathematical identity
-- Multi-target Grover omission — Phase 2 REFUTED (not differentially relevant to comparison)
-- §4.4 Performance and §4.6 Key Scalability — user-edited sections, preserve as-is
+- "The 16-bit S-box was designed explicitly as a quantum countermeasure" - correct and well-supported
+- "SPM is immune to Simon's algorithm" - Phase 2 REFUTED the challenge (Q25, +10 points); acceptable informal usage
+- DDT/LAT quantum invariance - Phase 2 REFUTED the challenge (Q30, +10 points); trivially true mathematical identity
+- Multi-target Grover omission - Phase 2 REFUTED (not differentially relevant to comparison)
+- §4.4 Performance and §4.6 Key Scalability - user-edited sections, preserve as-is
 
 ---
 

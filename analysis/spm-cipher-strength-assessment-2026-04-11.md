@@ -1,4 +1,4 @@
-# Cryptanalytic Strength Assessment — SPM Block Cipher (CSpmBlockCipher64)
+# Cryptanalytic Strength Assessment - SPM Block Cipher (CSpmBlockCipher64)
 
 **Scope:** Core cipher algorithm under full 256-bit key. No password attacks. No nonce-focused analysis.
 
@@ -6,7 +6,7 @@
 
 ## Executive Summary
 
-A multi-phase adversarial cryptanalysis of the SPM block cipher found **no attack that reduces the effective complexity below brute force of the 256-bit key space**. The strongest pure cryptanalytic attack is exhaustive key search at **O(2^254)** (254 effective key bits due to two forced-odd PRNG keys). Under a side-channel threat model where the S-box table is leaked, the remaining search space is **O(2^127)** — still computationally infeasible. The cipher's primary defense is its 759-step cascading S-box with overlapping sliding windows, which prevents decomposition, layer-peeling, meet-in-the-middle, and algebraic attacks. The key architecture supports arbitrary key size expansion, meaning the security margin can be increased without architectural changes.
+A multi-phase adversarial cryptanalysis of the SPM block cipher found **no attack that reduces the effective complexity below brute force of the 256-bit key space**. The strongest pure cryptanalytic attack is exhaustive key search at **O(2^254)** (254 effective key bits due to two forced-odd PRNG keys). Under a side-channel threat model where the S-box table is leaked, the remaining search space is **O(2^127)** - still computationally infeasible. The cipher's primary defense is its 759-step cascading S-box with overlapping sliding windows, which prevents decomposition, layer-peeling, meet-in-the-middle, and algebraic attacks. The key architecture supports arbitrary key size expansion, meaning the security margin can be increased without architectural changes.
 
 ---
 
@@ -21,13 +21,13 @@ A multi-phase adversarial cryptanalysis of the SPM block cipher found **no attac
 | Rounds | 3 |
 | Steps per round | 253 (127 forward + 126 reverse) |
 | Total S-box operations per block | 759 |
-| PRNG | CSimplePrng64 — Weyl sequence (state += key mod 2^64) |
+| PRNG | CSimplePrng64 - Weyl sequence (state += key mod 2^64) |
 | Key split | Bytes 0–15 → S-box PRNG seed (127 effective bits), Bytes 16–31 → Mask PRNG seed (127 effective bits) |
-| Block independence | By design — each block encrypted independently using PRNG-advanced mask state |
+| Block independence | By design - each block encrypted independently using PRNG-advanced mask state |
 
 ---
 
-## 2. Strongest Attack: Brute Force — O(2^254)
+## 2. Strongest Attack: Brute Force - O(2^254)
 
 **No cryptanalytic shortcut was found that reduces the attack complexity below exhaustive search of the 256-bit key space.**
 
@@ -35,37 +35,37 @@ A multi-phase adversarial cryptanalysis of the SPM block cipher found **no attac
 
 | Attack Class | Complexity | Data Required | Feasible? |
 |---|---|---|---|
-| **Brute force (strongest)** | **O(2^254)** | 1 known P/C pair | No — astronomically impractical |
+| **Brute force (strongest)** | **O(2^254)** | 1 known P/C pair | No - astronomically impractical |
 | Key decomposition | O(2^254) | 1 known P/C pair | Cascade prevents independent half-key attack |
 | Differential cryptanalysis | O(2^254) | N/A | Unknown S-box + 759-step cascade = infeasible |
 | Linear cryptanalysis | O(2^254) | N/A | Unknown LAT + all-active S-boxes = infeasible |
 | Meet-in-the-middle | O(2^254) | 1 known P/C pair | S-box and masks entangled at every step |
 | Algebraic (SAT/Gröbner) | O(2^254) | 1 known P/C pair | System too large and nonlinear |
 | Slide attack | O(2^56) pairs needed | 2^63 bytes (~9 exabytes) | Data requirement impractical |
-| Codebook | O(2^1024) | 2^1024 blocks | Absurd — block space too large |
+| Codebook | O(2^1024) | 2^1024 blocks | Absurd - block space too large |
 | Side-channel + brute force | O(2^127) | S-box leak + 1 P/C pair | Conditional on physical access |
 
 ### 2.2 Why Key Decomposition Fails
 
 The 256-bit key splits cleanly into two 128-bit halves (S-box seed and mask seed). An attacker might hope to attack each half independently at O(2^128) rather than O(2^254). This was investigated thoroughly and **refuted**.
 
-The cascade barrier prevents polynomial-time S-box verification. Given a candidate S-box and a known (P, C) pair, determining whether any mask PRNG seed produces C from P requires simulating the full 759-step cascading encryption for each of the 2^127 candidate mask seeds. The overlapping-window cascade creates inter-step dependencies — each S-box output's high byte feeds into the next step's input — that cannot be resolved without knowing all prior mask values. Verification cost per S-box candidate: O(2^127). Total: O(2^127 × 2^127) = O(2^254).
+The cascade barrier prevents polynomial-time S-box verification. Given a candidate S-box and a known (P, C) pair, determining whether any mask PRNG seed produces C from P requires simulating the full 759-step cascading encryption for each of the 2^127 candidate mask seeds. The overlapping-window cascade creates inter-step dependencies - each S-box output's high byte feeds into the next step's input - that cannot be resolved without knowing all prior mask values. Verification cost per S-box candidate: O(2^127). Total: O(2^127 × 2^127) = O(2^254).
 
 ### 2.3 Exhaustive Search Procedure
 
 1. **Obtain one known P/C pair** (128 bytes plaintext, 128 bytes ciphertext, encrypted under the target key).
 2. **Enumerate all possible 32-byte keys** (2^254 effective candidates):
    - Bytes 0–7: S-box PRNG initial state (64 bits)
-   - Bytes 8–15: S-box PRNG key (63 effective bits — LSB forced to 1)
+   - Bytes 8–15: S-box PRNG key (63 effective bits - LSB forced to 1)
    - Bytes 16–23: Mask PRNG initial state (64 bits)
-   - Bytes 24–31: Mask PRNG key (63 effective bits — LSB forced to 1)
+   - Bytes 24–31: Mask PRNG key (63 effective bits - LSB forced to 1)
 3. **For each candidate key:**
    a. Initialize S-box PRNG with bytes 0–15
    b. Generate S-box via 16 passes × 65,536 naive shuffle swaps (~1M PRNG calls)
    c. Compute reverse S-box
    d. Initialize mask PRNG with bytes 16–31
    e. Encrypt P using the candidate S-box and mask stream (759 S-box lookups)
-   f. Compare output to C — if match, key found
+   f. Compare output to C - if match, key found
 4. **Per-candidate cost:** ~1,049,335 operations (S-box generation dominates)
 5. **Total work:** O(2^254 × 2^20) ≈ O(2^274) operations
 6. **Data required:** 1 known P/C pair; a second pair confirms the key uniquely
@@ -78,11 +78,11 @@ Under a side-channel threat model (cache-timing attack on the 128 KB S-box table
 - **Requirements:** Full S-box table leaked via side channel + 1 known P/C pair
 - **Feasibility:** O(2^127) is still far beyond computational reach, comparable to AES-128 brute force
 
-Since the mask contributes relatively little to the cipher's cryptanalytic resistance (see §3.1), the cipher's effective security under side-channel threat is **O(2^127)**, which remains adequate by modern standards. This could be improved arbitrarily by increasing the key size — for example, a 1152-bit key (1024 bits for S-box/permutation, 128 bits for mask) would raise the side-channel-conditional security to O(2^127) for the mask while providing O(2^511) for the S-box seed, for an overall effective security well beyond any foreseeable attack capability. There is no architectural limit on key size in the SPM design.
+Since the mask contributes relatively little to the cipher's cryptanalytic resistance (see §3.1), the cipher's effective security under side-channel threat is **O(2^127)**, which remains adequate by modern standards. This could be improved arbitrarily by increasing the key size - for example, a 1152-bit key (1024 bits for S-box/permutation, 128 bits for mask) would raise the side-channel-conditional security to O(2^127) for the mask while providing O(2^511) for the S-box seed, for an overall effective security well beyond any foreseeable attack capability. There is no architectural limit on key size in the SPM design.
 
 ---
 
-## 3. Cipher Properties — Detailed Analysis
+## 3. Cipher Properties - Detailed Analysis
 
 ### 3.1 XOR Masks: Purpose and Cryptanalytic Role
 
@@ -95,23 +95,23 @@ DDT_{S(·⊕m)}(Δx, Δy) = DDT_S(Δx, Δy)   for all mask values m
 
 The mask cancels in differential computations (substitution a = x ⊕ m is a bijection preserving count), and contributes only a sign change to the linear approximation (absolute value preserved). The cipher's resistance to differential and linear cryptanalysis depends entirely on the S-box quality and cascade structure, not on the mask values.
 
-**However, the masks serve a different and essential purpose:** they are the mechanism by which the encryption varies from one block to the next. The mask PRNG state advances with each block, ensuring that identical plaintext blocks at different positions within a file produce unique ciphertext blocks. Without the masks, the cipher would be a pure codebook — every block encrypted identically. The masks provide inter-block uniqueness: identical ciphertext only occurs when the same plaintext block appears at the same block position (and thus encounters the same PRNG state). At any other position, the PRNG state differs and the ciphertext is unique.
+**However, the masks serve a different and essential purpose:** they are the mechanism by which the encryption varies from one block to the next. The mask PRNG state advances with each block, ensuring that identical plaintext blocks at different positions within a file produce unique ciphertext blocks. Without the masks, the cipher would be a pure codebook - every block encrypted identically. The masks provide inter-block uniqueness: identical ciphertext only occurs when the same plaintext block appears at the same block position (and thus encounters the same PRNG state). At any other position, the PRNG state differs and the ciphertext is unique.
 
-This is a deliberate design choice. The masks are not intended to strengthen the cipher against differential or linear attacks — that role belongs to the S-box and cascade. The masks provide the block-position-dependent variation that prevents plaintext pattern leakage across blocks within a single encryption operation.
+This is a deliberate design choice. The masks are not intended to strengthen the cipher against differential or linear attacks - that role belongs to the S-box and cascade. The masks provide the block-position-dependent variation that prevents plaintext pattern leakage across blocks within a single encryption operation.
 
 ### 3.2 Independent Block Encryption: A Design Feature
 
 Each ciphertext block can be encrypted and decrypted independently of all other blocks, given the key and block position. This is an intentional architectural choice, not a weakness. The block independence provides:
 
-1. **Random-access decryption.** Any individual block in a large ciphertext can be decrypted without processing any other block. This is analogous to random-access memory — the decryptor seeks directly to the target block, initializes the PRNG to the correct state for that block position, and decrypts.
+1. **Random-access decryption.** Any individual block in a large ciphertext can be decrypted without processing any other block. This is analogous to random-access memory - the decryptor seeks directly to the target block, initializes the PRNG to the correct state for that block position, and decrypts.
 
 2. **Parallelization.** Encryption and decryption of a large file can be distributed across multiple CPUs or machines, with each processor handling a disjoint subset of blocks. There is no serial dependency between blocks.
 
-3. **Compartmentalized security.** Access can be restricted to specific blocks within a larger ciphertext corpus. A system can decrypt only the blocks it needs without exposing the plaintext of other blocks. Even with a valid key, data in undecrypted blocks is never materialized in memory — if the key and intermediate state are securely destroyed after the operation, no information from other blocks is leaked. This enables fine-grained access control over portions of an encrypted dataset.
+3. **Compartmentalized security.** Access can be restricted to specific blocks within a larger ciphertext corpus. A system can decrypt only the blocks it needs without exposing the plaintext of other blocks. Even with a valid key, data in undecrypted blocks is never materialized in memory - if the key and intermediate state are securely destroyed after the operation, no information from other blocks is leaked. This enables fine-grained access control over portions of an encrypted dataset.
 
 4. **Efficient partial updates.** A single modified plaintext block can be re-encrypted in place without re-encrypting the entire file.
 
-The inter-block variation that prevents identical plaintext blocks from producing identical ciphertext is provided by the mask PRNG state advancement (§3.1). This design does not reduce the cryptanalytic strength of the cipher — no attack exploiting block independence was found that performs better than O(2^254) brute force.
+The inter-block variation that prevents identical plaintext blocks from producing identical ciphertext is provided by the mask PRNG state advancement (§3.1). This design does not reduce the cryptanalytic strength of the cipher - no attack exploiting block independence was found that performs better than O(2^254) brute force.
 
 ### 3.3 Static S-box Across All Rounds and Positions
 
@@ -123,7 +123,7 @@ For comparison: AES also uses a single fixed S-box across all rounds (the same S
 
 ### 3.4 Key Architecture and Scalability
 
-The 256-bit key splits into two independent PRNG seeds: 128 bits for S-box generation and 128 bits for mask generation. Under pure cryptanalysis, the cascade entangles these halves so tightly that the effective search space remains O(2^254) (§2.2). Under a side-channel threat model where the S-box table is leaked, the remaining search drops to O(2^127) for the mask seed — still computationally infeasible by current and foreseeable technology.
+The 256-bit key splits into two independent PRNG seeds: 128 bits for S-box generation and 128 bits for mask generation. Under pure cryptanalysis, the cascade entangles these halves so tightly that the effective search space remains O(2^254) (§2.2). Under a side-channel threat model where the S-box table is leaked, the remaining search drops to O(2^127) for the mask seed - still computationally infeasible by current and foreseeable technology.
 
 **The SPM architecture places no limit on key size.** The security margin can be increased arbitrarily by widening the key. For example:
 
@@ -138,15 +138,15 @@ In all configurations, the mask seed size determines the side-channel security f
 
 ### 3.5 Forward-Pass Restricted Differential Trail Space
 
-The forward cascade pass restricts input differences to the form (d, 0) at each step — only 255 of 65,535 nonzero 16-bit differences are exercised. This is because the overlapping-window cascade feeds the high byte of one step's output into the low byte of the next step's input. A single-byte input difference enters via the low byte and propagates exclusively through the high-byte channel.
+The forward cascade pass restricts input differences to the form (d, 0) at each step - only 255 of 65,535 nonzero 16-bit differences are exercised. This is because the overlapping-window cascade feeds the high byte of one step's output into the low byte of the next step's input. A single-byte input difference enters via the low byte and propagates exclusively through the high-byte channel.
 
 **This restriction is limited in scope and does not weaken the cipher materially:**
 
-1. The reverse pass immediately introduces full 16-bit differences — both bytes at each position carry independent differences from the forward pass.
+1. The reverse pass immediately introduces full 16-bit differences - both bytes at each position carry independent differences from the forward pass.
 2. By round 2, the restriction is completely eliminated. The first step of round 2's forward pass sees a full 16-bit input difference.
 3. The restriction affects only 127 of the 759 total cascade steps (17%).
 
-### 3.6 Cascade Diffusion — Survival Analysis
+### 3.6 Cascade Diffusion - Survival Analysis
 
 The probability that a single-byte difference propagates through all 127 steps of a forward pass is approximately **61%** (modeled as (1 − 255/65536)^126 ≈ 0.613). This means ~39% of single-byte changes do not reach the end of a single forward pass. However:
 
@@ -166,17 +166,17 @@ This is the weakest position in the block structure. However, 3 S-box applicatio
 
 The S-box is generated using a naive shuffle algorithm (swap each element with a random element from the full array) rather than the standard Fisher-Yates algorithm (swap with elements from the remaining unsorted portion). The naive shuffle produces a biased distribution over permutations.
 
-The cipher compensates by running 16 successive shuffle passes over the same array. After 16 passes, the total variation distance between the resulting distribution and a uniform random permutation is approximately **0.6%** — negligible for cryptographic purposes. The expected differential uniformity δ ≈ 4–6 matches that of a truly random 16-bit permutation.
+The cipher compensates by running 16 successive shuffle passes over the same array. After 16 passes, the total variation distance between the resulting distribution and a uniform random permutation is approximately **0.6%** - negligible for cryptographic purposes. The expected differential uniformity δ ≈ 4–6 matches that of a truly random 16-bit permutation.
 
-The terminology "Fisher-Yates" in existing documentation is incorrect — it should be described as a "16-pass naive shuffle" — but the security impact is negligible.
+The terminology "Fisher-Yates" in existing documentation is incorrect - it should be described as a "16-pass naive shuffle" - but the security impact is negligible.
 
 ---
 
-## 4. Cipher Strengths — Consensus
+## 4. Cipher Strengths - Consensus
 
 1. **759-step cascading S-box is the primary defense.** The overlapping-window cascade with 3 bidirectional rounds creates a deeply nested nonlinear transformation that resists layer-peeling, decomposition, MITM, and algebraic attacks. This is the single most important security feature of the cipher.
 
-2. **Large block size (1024 bits).** Birthday-bound collisions would require 2^512 blocks — completely infeasible. The large block provides an expansive diffusion domain and makes codebook-style attacks impossible.
+2. **Large block size (1024 bits).** Birthday-bound collisions would require 2^512 blocks - completely infeasible. The large block provides an expansive diffusion domain and makes codebook-style attacks impossible.
 
 3. **Key-dependent S-box prevents offline analysis.** Unlike fixed S-box ciphers, the attacker cannot precompute DDT/LAT tables. Any differential or linear analysis requires first recovering the S-box, which requires the key.
 
@@ -209,11 +209,11 @@ In all practical scenarios, **a single known plaintext-ciphertext block pair (12
 
 | Priority | Recommendation |
 |----------|---------------|
-| **1 — HIGH** | Add encrypt-then-MAC authentication (e.g., HMAC-SHA256 over nonce + file_size + ciphertext). Without authentication, ciphertext manipulation (block substitution, truncation, corruption) is undetectable. This does not affect the cryptanalytic strength of the cipher itself but is essential for a complete cryptosystem. |
-| **2 — MEDIUM** | Replace CSimplePrng64 with a CSPRNG (ChaCha20 / AES-CTR-DRBG / BCryptGenRandom) for both S-box and mask generation. This would eliminate the clean key split that enables the side-channel key partition scenario and improve theoretical confidence in S-box quality. |
-| **3 — MEDIUM** | Fix the shuffle algorithm to standard Fisher-Yates, removing the need for the 16-pass compensating workaround. |
-| **4 — LOW** | Consider a balanced key split (equal S-box and mask seed sizes) to maximize security under both pure cryptanalytic and side-channel threat models (see §3.4). |
-| **5 — LOW** | Establish formal differential/linear security bounds through empirical measurement of DDT and LAT over a sample of PRNG-generated S-boxes. |
+| **1 - HIGH** | Add encrypt-then-MAC authentication (e.g., HMAC-SHA256 over nonce + file_size + ciphertext). Without authentication, ciphertext manipulation (block substitution, truncation, corruption) is undetectable. This does not affect the cryptanalytic strength of the cipher itself but is essential for a complete cryptosystem. |
+| **2 - MEDIUM** | Replace CSimplePrng64 with a CSPRNG (ChaCha20 / AES-CTR-DRBG / BCryptGenRandom) for both S-box and mask generation. This would eliminate the clean key split that enables the side-channel key partition scenario and improve theoretical confidence in S-box quality. |
+| **3 - MEDIUM** | Fix the shuffle algorithm to standard Fisher-Yates, removing the need for the 16-pass compensating workaround. |
+| **4 - LOW** | Consider a balanced key split (equal S-box and mask seed sizes) to maximize security under both pure cryptanalytic and side-channel threat models (see §3.4). |
+| **5 - LOW** | Establish formal differential/linear security bounds through empirical measurement of DDT and LAT over a sample of PRNG-generated S-boxes. |
 
 ---
 
