@@ -32,30 +32,32 @@ Plus a **key schedule** that expands the 256-bit key into 15 × 128-bit round ke
 
 **Total operations per block:** 14 rounds × 16 S-box lookups = 224 S-box lookups, plus 14 × 16 GF(2^8) multiplications (MixColumns), plus 14 × 128-bit XORs (AddRoundKey).
 
-### SPM-256: 3 Rounds × 253 Cascade Steps per Round
+### SPM-256: 3 Rounds × 253 Cascade Steps per Round + Block Permutation
 
-Each SPM round applies a single repeated operation in a bidirectional cascade:
+Each SPM round applies two operations:
 
-1. **Forward pass (k = 0..126):** `block[k:k+2] = S[block[k:k+2] ⊕ mask_k]` - XOR a 16-bit mask, then substitute through a 65,536-entry S-box
-2. **Reverse pass (k = 125..0):** Same operation, traversing backward
+1. **Bidirectional cascade:**
+   - **Forward pass (k = 0..126):** `block[k:k+2] = S[block[k:k+2] ⊕ mask_k]` - XOR a 16-bit mask, then substitute through a 65,536-entry S-box
+   - **Reverse pass (k = 125..0):** Same operation, traversing backward
+2. **Block permutation:** A key-dependent byte-level permutation π rearranges all 128 byte positions after each round's cascade passes, disrupting fixed positional structure between rounds.
 
-No matrix multiplication. No row shifting. No key schedule. No round constants.
+No matrix multiplication. No key schedule. No round constants.
 
-**Total operations per block:** 3 rounds × 253 steps = 759 S-box lookups + 759 XORs.
+**Total operations per block:** 3 rounds × 253 steps = 759 S-box lookups + 759 XORs + 3 byte-level permutations + 128 PRNG_S outputs for per-block permutation derivation.
 
 ### Side-by-Side
 
 | Dimension | AES-256 | SPM-256 |
 |-----------|---------|---------|
 | Rounds | 14 | 3 |
-| Distinct operation types per round | 4 (SubBytes, ShiftRows, MixColumns, AddRoundKey) | 1 (XOR + S-box lookup) |
+| Distinct operation types per round | 4 (SubBytes, ShiftRows, MixColumns, AddRoundKey) | 2 (XOR + S-box cascade, byte permutation) |
 | S-box lookups per block | 224 (8-bit) | 759 (16-bit) |
 | Matrix multiplications per block | 160 (GF(2^8)) | 0 |
 | Key schedule complexity | Complex - 15 round keys via SubWord, RotWord, Rcon | None - two PRNG seeds used directly |
 | Setup cost | Negligible (key expansion: ~100 operations) | Heavy (~1,049,000 operations for S-box generation) |
 | Code complexity | Moderate - requires GF(2^8) arithmetic or precomputed tables | Low - only array indexing, XOR, and PRNG |
 
-**SPM is algorithmically simpler.** It uses a single primitive (XOR + table lookup) applied repeatedly in a cascade. AES requires four distinct transformations, one of which (MixColumns) involves Galois field arithmetic - a non-trivial mathematical operation that must either be computed on-the-fly or replaced with precomputed lookup tables (T-tables).
+**SPM is algorithmically simpler.** It uses two primitive operations (XOR + table lookup cascade, and byte permutation) applied repeatedly. AES requires four distinct transformations, one of which (MixColumns) involves Galois field arithmetic - a non-trivial mathematical operation that must either be computed on-the-fly or replaced with precomputed lookup tables (T-tables).
 
 ---
 
@@ -164,7 +166,7 @@ AES's fixed S-box can be implemented in constant time using bitslicing or AES-NI
 | Depth of public cryptanalysis | **AES** - 28 years, thousands of papers |
 | Performance | **AES** - hardware acceleration, 14 cycles/block |
 | Side-channel resistance | **AES** - constant-time implementations exist |
-| Implementation simplicity | **SPM** - one operation type vs. four |
+| Implementation simplicity | **SPM** - two operation types vs. four |
 | Setup cost | **AES** - negligible key expansion |
 
 The absence of predefined structure is a **genuine cryptographic advantage** in the dimensions of algebraic attack resistance, trust, and per-key diversity. These are real and meaningful properties. However, AES's advantages in proven bounds, public scrutiny depth, performance, and side-channel resistance are equally real.
@@ -248,7 +250,7 @@ Each additional bit of S-box width doubles the entry count; the total qubit cost
 | Depth of public cryptanalysis | **AES** - 28 years, thousands of papers |
 | Performance | **AES** - hardware acceleration, 14 cycles/block |
 | Side-channel resistance | **AES** - constant-time implementations exist |
-| Implementation simplicity | **SPM** - one operation type vs. four |
+| Implementation simplicity | **SPM** - two operation types vs. four |
 | Setup cost | **AES** - negligible key expansion |
 | Key scalability | **SPM** - no architectural limit on key size |
 
