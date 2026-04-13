@@ -21,9 +21,10 @@ Under quantum cryptanalysis, SPM demonstrates a **massive practical advantage ov
 | Rounds | 3 |
 | Steps per round | 253 (127 forward + 126 reverse) |
 | Total S-box operations per block | 759 |
+| Block permutation | Key-dependent byte-level permutation (128-byte bijection), applied after each round's cascade passes |
 | PRNG | CSimplePrng64 - Weyl sequence (state += key mod 2^64) |
 | Key split | Bytes 0–15 → S-box PRNG seed (127 effective bits), Bytes 16–31 → Mask PRNG seed (127 effective bits) |
-| Block independence | By design - each block encrypted independently using PRNG-advanced mask state |
+| Block independence | By design - each block encrypted independently using PRNG-advanced mask and permutation state |
 
 ---
 
@@ -41,7 +42,7 @@ Under quantum cryptanalysis, SPM demonstrates a **massive practical advantage ov
 | Linear cryptanalysis | O(2^254) | N/A | Unknown LAT + all-active S-boxes = infeasible |
 | Meet-in-the-middle | O(2^254) | 1 known P/C pair | S-box and masks entangled at every step |
 | Algebraic (SAT/Gröbner) | O(2^254) | 1 known P/C pair | System too large and nonlinear |
-| Slide attack | O(2^56) pairs needed | 2^63 bytes (~9 exabytes) | Data requirement impractical |
+| Slide attack | O(2^254) | ~2^{73} bytes (~10 zettabytes) | Data requirement impractical (PRNG_M period = 2^{66} blocks) |
 | Side-channel + brute force | O(2^127) | S-box leak + 1 P/C pair | Conditional on physical access |
 | **Grover's algorithm (quantum)** | **O(2^{163}) gates** | 1 known P/C pair | No - requires ~1.05M qubits |
 | Simon's algorithm (quantum) | N/A | N/A | Not applicable - no public permutation |
@@ -64,11 +65,12 @@ The cascade barrier prevents polynomial-time S-box verification. Given a candida
 3. **For each candidate key:**
    a. Initialize S-box PRNG with bytes 0–15
    b. Generate S-box via 16 passes × 65,536 naive shuffle swaps (~1M PRNG calls)
-   c. Compute reverse S-box
-   d. Initialize mask PRNG with bytes 16–31
-   e. Encrypt P using the candidate S-box and mask stream (759 S-box lookups)
-   f. Compare output to C - if match, key found
-4. **Per-candidate cost:** ~1,049,335 operations (S-box generation dominates)
+   c. Generate base block permutation via 16 passes × 128 naive shuffle swaps (2,048 PRNG calls, same PRNG_S instance)
+   d. Compute reverse S-box
+   e. Initialize mask PRNG with bytes 16–31
+   f. Encrypt P using the candidate S-box, mask stream, and per-block permutation (759 S-box lookups + 3 permutations)
+   g. Compare output to C - if match, key found
+4. **Per-candidate cost:** ~1,051,383 operations (S-box + permutation generation dominates)
 5. **Total work:** O(2^254 × 2^20) ≈ O(2^274) operations
 6. **Data required:** 1 known P/C pair; a second pair confirms the key uniquely
 
@@ -184,11 +186,13 @@ The cipher compensates by running 16 successive shuffle passes over the same arr
 
 5. **Full byte diffusion per round.** The bidirectional cascade (forward + reverse) ensures all 128 bytes are influenced after one complete round. Three rounds provide robust diffusion despite the ~61% forward-pass survival correction.
 
-6. **No cryptanalytic shortcut found.** After exhaustive adversarial analysis across multiple attack families (differential, linear, algebraic, MITM, slide, chosen-plaintext), no approach reduces the effective complexity below O(2^254) brute force.
+6. **Inter-round byte-level permutation disrupts positional structure.** After each round's cascade passes, a key-dependent byte permutation scrambles byte positions before the next round. This prevents an attacker from building algebraic equations that exploit fixed positional structure across rounds. The permutation transforms the banded inter-round equation system (bandwidth 2) into a dense system with secret random wiring — the worst case for Gröbner basis and SAT solvers. The permutation is derived from K_S (providing derived, not independent, security) and adds only linear equations to the algebraic system, but its structural contribution eliminates exploitable regularity at negligible computational cost.
 
-7. **Block independence enables parallelization and compartmentalized access.** The random-access design supports high-throughput parallel encryption and fine-grained security compartmentalization without sacrificing cryptanalytic strength.
+7. **No cryptanalytic shortcut found.** After exhaustive adversarial analysis across multiple attack families (differential, linear, algebraic, MITM, slide, chosen-plaintext), no approach reduces the effective complexity below O(2^254) brute force.
 
-8. **Arbitrarily scalable key size.** The architecture imposes no upper limit on key width, allowing the security margin to be increased as computational threats evolve, with little or no impact on computational cost per block.
+8. **Block independence enables parallelization and compartmentalized access.** The random-access design supports high-throughput parallel encryption and fine-grained security compartmentalization without sacrificing cryptanalytic strength.
+
+9. **Arbitrarily scalable key size.** The architecture imposes no upper limit on key width, allowing the security margin to be increased as computational threats evolve, with little or no impact on computational cost per block.
 
 ---
 
@@ -199,7 +203,7 @@ The cipher compensates by running 16 successive shuffle passes over the same arr
 | Brute force key recovery | 1 (128 bytes) | 1 (128 bytes) | Known-plaintext |
 | Key confirmation | 2 | 2 | Known-plaintext |
 | Side-channel + brute force | 1 | 1 | Known-plaintext + physical access |
-| Slide attack (theoretical) | 2^56 | 2^56 | Known-plaintext (~9 exabytes) |
+| Slide attack (theoretical) | 2^{66} | 2^{66} | Known-plaintext (~10 zettabytes) |
 
 In all practical scenarios, **a single known plaintext-ciphertext block pair (128 bytes each) is sufficient** for key recovery verification. A second pair confirms the key uniquely.
 
@@ -320,7 +324,7 @@ To contextualize SPM's quantum resistance, we surveyed published symmetric ciphe
 | **Blowfish** [4] | ≤448-bit | 64-bit | Key-dependent (521 subkey encryptions) | 8-bit | ~10,000–50,000 | ~2^{22}–2^{25} |
 | **EAES** | 256-bit | 128–256-bit | Fixed (extended AES rounds) | 8-bit | ~400–600 | ~2^{18}–2^{20} |
 | **Rectangle** | 128-bit | 64-bit | Fixed (4-bit) | 4-bit | ~200–400 | ~2^{15}–2^{17} |
-| **SPM-256** | 256-bit | 1024-bit | Key-dependent (PRNG Fisher-Yates shuffle) | **16-bit** | **~1,050,000** | **~2^{36}** |
+| **SPM-256** | 256-bit | 1024-bit | Key-dependent (PRNG naive shuffle) | **16-bit** | **~1,050,000** | **~2^{36}** |
 
 Several observations emerge from this comparison:
 

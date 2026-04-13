@@ -43,6 +43,10 @@ Throughout this paper we use the following notation:
 | DDT_S(Δx, Δy) | Differential distribution table entry: \|{x : S(x) ⊕ S(x ⊕ Δx) = Δy}\| |
 | LAT_S(a, b) | Linear approximation table entry: Σ_x (−1)^{a·x ⊕ b·S(x)} |
 | δ(S) | Differential uniformity: max_{Δx≠0, Δy} DDT_S(Δx, Δy) |
+| π | The per-block byte-level permutation: a bijection on {0, 1, ..., 127} derived from K_S |
+| π⁻¹ | The inverse permutation: π⁻¹[π[k]] = k for all k |
+| PRNG_S | The S-box PRNG instance (CSimplePrng64 seeded by K_S); used for S-box generation, base permutation generation, and per-block permutation shuffling |
+| π_b | The per-block permutation variant for block b, derived from the base permutation by a 128-swap shuffle using PRNG_S |
 
 ---
 
@@ -153,9 +157,25 @@ for i = 0 to 65535:
 
 The choice of a 16-bit S-box width (65,536 entries, 128 KB) is a deliberate design decision that maximizes the degree of nonlinearity while simultaneously creating an enormous quantum circuit cost. As analyzed in §5, a quantum attacker using Grover's algorithm must hold the entire 65,536-entry S-box in quantum registers during superposition - requiring over 1 million qubits for the S-box alone. An 8-bit S-box (as used in AES) would require only 2,048 qubits for the same purpose - a factor of 512× less. The 16-bit width thus serves a dual purpose: maximizing classical nonlinearity per cascade step, and maximizing the quantum circuit cost for any attacker attempting to evaluate the cipher in superposition.
 
+#### 2.4.1 Block Permutation Generation
+
+After S-box generation, the block permutation is generated using the same PRNG_S instance (continuing from its post-S-box state). The base permutation P[0..127] is initialized to the identity (0, 1, 2, ..., 127) and shuffled via 16 passes of the naive shuffle algorithm (swap each element with a uniformly random element from the full array):
+
+```
+function GenerateBasePermutation(P[0..127], PRNG_S):
+    for pass = 1 to 16:
+        for i = 0 to 127:
+            r ← PRNG_S.Rand() mod 128
+            swap P[i] ↔ P[r]
+```
+
+Total PRNG_S consumption: 16 × 128 = 2,048 outputs. The 16-pass compensation strategy is identical to the S-box generation (§2.4): multiple passes reduce distributional bias from the naive (non-Fisher-Yates) shuffle to negligible levels (~0.6% total variation distance from uniform).
+
+**Key dependence.** The base permutation is entirely determined by K_S. Since PRNG_S is consumed sequentially — first for S-box generation (~1,048,576 outputs), then for base permutation generation (2,048 outputs) — the base permutation is a deterministic function of K_S and is unique per key.
+
 ### 2.5 Block Encryption
 
-Encryption processes one 128-byte block at a time. Each block undergoes 3 rounds, where each round consists of a forward cascade pass followed by a reverse cascade pass.  Again, 3 rounds is an implementation detail whihc can be increased or decreased as needed.  3 rounds were chosen because it maximizes the probability that changing 1 bit in the plaintext will change each of the bits in the ciphertext with equal probability, which is a desirable goal for a block cipher.
+Encryption processes one 128-byte block at a time. Each block undergoes 3 rounds, where each round consists of a forward cascade pass, a reverse cascade pass, and a byte-level block permutation.Again, 3 rounds is an implementation detail whihc can be increased or decreased as needed.  3 rounds were chosen because it maximizes the probability that changing 1 bit in the plaintext will change each of the bits in the ciphertext with equal probability, which is a desirable goal for a block cipher.
 
 #### 2.5.1 Forward Cascade Pass
 
@@ -198,16 +218,46 @@ The reverse pass starts at position 125 (not 126) and proceeds to position 0. Th
 #### 2.5.3 Complete Block Encryption
 
 ```
-function EncryptBlock(B[0..127], PRNG_M, S):
+function EncryptBlock(B[0..127], PRNG_M, PRNG_S, S, P_base[0..127]):
+    // Step 1: Derive per-block permutation from base permutation
+    π ← copy of P_base
+    for i = 0 to 127:
+        r ← PRNG_S.Rand() mod 128
+        swap π[i] ↔ π[r]
+
+    // Step 2: Three rounds of cascade + permutation
     for round = 1 to 3:
         ForwardPass(B, PRNG_M, S)             // 127 steps
         ReversePass(B, PRNG_M, S)             // 126 steps
-    // Total: 3 × (127 + 126) = 759 S-box applications
+        ApplyPermutation(B, π)                // byte-level reordering
+    // Total: 3 × (127 + 126) = 759 S-box applications + 3 permutations
 ```
 
-**Mask consumption per block:** Each of the 759 steps consumes one 16-bit PRNG output. Four outputs are produced per PRNG state advancement, so each block requires ⌈759/4⌉ = 190 state advancements of the mask PRNG.
+**PRNG consumption per block:** Each of the 759 cascade steps consumes one 16-bit PRNG_M output (759 mask values total). Additionally, 128 PRNG_S outputs are consumed for the per-block permutation shuffle. Four outputs are produced per PRNG state advancement, so each block requires ⌈759/4⌉ = 190 state advancements of PRNG_M and ⌈128/4⌉ = 32 state advancements of PRNG_S.
 
 **Cryptographic purpose of 3 rounds:** Each round provides bidirectional diffusion across the full block. By the second round, any single-byte difference in the input has influenced all 128 bytes through both forward and reverse cascade chains. The third round provides an additional margin. The choice of 3 rounds balances security margin against performance.
+
+### 2.5.4 Block Permutation
+
+After each round's forward and reverse cascade passes, a byte-level block permutation π is applied:
+
+```
+function ApplyPermutation(B[0..127], π[0..127]):
+    buffer[0..127] ← zeroed
+    for k = 0 to 127:
+        buffer[π[k]] ← B[k]
+    B ← buffer
+```
+
+The permutation is a bijection on {0, 1, ..., 127}: the byte at position k is moved to position π(k). The per-block variant π is derived before the round loop by shuffling the base permutation (§2.4.1) with 128 PRNG_S outputs, ensuring each block receives a unique permutation. The same π is used for all 3 rounds within a block.
+
+**Cryptographic purpose.** The permutation disrupts the fixed positional byte-to-byte relationships between rounds of the cascade. Without the permutation, the cascade operates on the same byte positions in every round: position k always interacts with position k+1 in the forward pass and position k−1 in the reverse pass. The permutation ensures that the byte at position k after round i is moved to position π(k) before round i+1 begins, so the next round's cascade operates on a key-dependent rearrangement of the bytes.
+
+This mitigates theoretical combined algebraic attacks on the mask and S-box by preventing an attacker from building algebraic equations that exploit fixed positional structure across rounds. Without the permutation, the inter-round variable mapping is the identity — a publicly known structure. With the permutation, the mapping is a secret bijection derived from K_S.
+
+**Interaction with cascade diffusion.** The permutation redistributes partially-diffused bytes between rounds. After round 1 achieves full-block diffusion through the bidirectional cascade, the permutation rearranges byte positions so that round 2's cascade encounters different neighbor relationships. The positional arrangements across 3 rounds are identity, π, and π² — algebraically related through a single permutation but providing genuine positional diversity. Note that only the first 2 permutation applications (after rounds 1 and 2) provide inter-round diffusion benefit; the third application after round 3 is a trailing output transformation.
+
+**Interaction with extinction recovery.** When a forward-pass differential chain extinguishes at step k < 127, the bytes beyond position k carry no difference. Without the permutation, this "cold zone" persists as a contiguous region into round 2. With the permutation, cold-zone bytes are redistributed to pseudorandom positions, so round 2's forward cascade encounters surviving differences earlier in its serial chain.
 
 ### 2.6 Multi-Block Encryption
 
@@ -220,7 +270,7 @@ function Encrypt(data[0..N-1], K):
         EncryptBlock(data[i*128..(i+1)*128-1], PRNG_M, S)
 ```
 
-The S-box PRNG is consumed entirely during key setup and is not used during encryption (in the default NoPermutation mode). The mask PRNG state continues advancing across block boundaries, ensuring that each block encounters a unique sequence of masks.
+In NoPermutation mode, PRNG_S is consumed entirely during key setup and is not used during encryption. In Permutation mode, PRNG_S is additionally consumed during encryption: 128 outputs per block for the per-block permutation shuffle (§2.5.4). Since PRNG_S is deterministic (Weyl sequence), the per-block permutation for block n can be computed independently by advancing PRNG_S to the appropriate state, preserving random-access decryption. The mask PRNG state continues advancing across block boundaries, ensuring that each block encounters a unique sequence of masks.
 
 **Design rationale for block independence:** Although the mask PRNG state carries forward, each block's encryption depends only on the S-box (fixed for the key) and the PRNG state at the start of that block. Given the key and block index, the PRNG state for any block can be computed directly by advancing the PRNG by (block_index × 759) steps. This enables:
 
@@ -246,30 +296,44 @@ function FillDecryptMasks(PRNG_M):
 **Step 2 - Apply rounds in reverse:**
 
 ```
-function DecryptBlock(B[0..127], masks, S⁻¹):
-    idx ← 759                                // Start from the last mask
+function DecryptBlock(B[0..127], PRNG_M, PRNG_S, S⁻¹, P_base[0..127]):
+    // Step 1: Derive per-block permutation (identical to encryption)
+    π ← DeriveBlockPermutation(P_base, PRNG_S)   // 128 PRNG_S outputs
+    // Step 2: Compute inverse permutation
+    π⁻¹[π[k]] ← k for all k
+    // Step 3: Pre-generate all 759 masks in forward order
+    masks[0..758] ← CollectMasks(PRNG_M)
+    // Step 4: Apply rounds in reverse
+    idx ← 759
     for round = 3 down to 1:
-        // Reverse the reverse pass (walk right to left, applying S⁻¹ then XOR)
+        ApplyPermutation(B, π⁻¹)                  // reverse permutation FIRST
+        // Reverse the reverse pass
         for k = 0 to 125:
             idx ← idx - 1
             B[k:k+2] ← S⁻¹[B[k:k+2]]
             B[k:k+2] ← B[k:k+2] ⊕ masks[idx]
-        // Reverse the forward pass (walk left to right, applying S⁻¹ then XOR)
+        // Reverse the forward pass
         for k = 126 down to 0:
             idx ← idx - 1
             B[k:k+2] ← S⁻¹[B[k:k+2]]
             B[k:k+2] ← B[k:k+2] ⊕ masks[idx]
 ```
 
+In each decryption round, the inverse permutation π⁻¹ is applied first (before the inverse cascade passes), reversing the permutation that was applied last in the corresponding encryption round.
+
 Note the order reversal: to undo the forward pass (which went left-to-right applying XOR then S), the decryption applies S⁻¹ then XOR in right-to-left order, and vice versa for the reverse pass.
 
 ### 2.8 Summary of Operations per Block
 
-| Phase | S-box Lookups | XOR Operations | PRNG Calls |
-|-------|--------------|----------------|------------|
-| Forward pass (×3) | 127 × 3 = 381 | 127 × 3 = 381 | 381 |
-| Reverse pass (×3) | 126 × 3 = 378 | 126 × 3 = 378 | 378 |
-| **Total per block** | **759** | **759** | **759** |
+| Phase | S-box Lookups | XOR Operations | PRNG_M Calls | Permutations | PRNG_S Calls |
+|-------|--------------|----------------|------------|-------------|-------------|
+| Forward pass (×3) | 127 × 3 = 381 | 127 × 3 = 381 | 381 | — | — |
+| Reverse pass (×3) | 126 × 3 = 378 | 126 × 3 = 378 | 378 | — | — |
+| Permutation (×3) | — | — | — | 3 | — |
+| Per-block shuffle | — | — | — | — | 128 |
+| **Total per block** | **759** | **759** | **759** | **3** | **128** |
+
+The permutation adds 3 × 128 = 384 byte moves and 128 PRNG_S evaluations per block, approximately 22.5% overhead over the NoPermutation mode.
 
 ---
 
@@ -329,11 +393,15 @@ This uses the observation that for a random 16-bit permutation S, the probabilit
 
 **Per-step worst-case differential probability:** For a random 16-bit permutation, δ ≈ 4–6, giving a per-step probability of at most δ/2^16 ≈ 2^{−13.4} for any specific output difference. Over 759 steps, the cumulative probability for any specific 759-step characteristic is bounded by approximately 2^{−13.4 × 759} ≈ 2^{−10,171} - far below any exploitable threshold.
 
+**Inter-round permutation effect.** After each round's bidirectional cascade, the key-dependent byte-level permutation π scatters output differences to pseudorandom positions before the next round begins. This eliminates positional alignment between rounds: the attacker cannot construct multi-round differential characteristics without knowledge of π (derived from K_S). The positional arrangements across rounds are identity, π, and π² — determined by a single per-block permutation, not three independent permutations. Nevertheless, the permutation prevents the attacker from predicting which byte positions carry active differences into subsequent rounds, forcing multi-round trail construction to assume average-case DDT behavior across all positions. When a forward-pass differential chain extinguishes at some position, the permutation disperses the "cold zone" across the block for the next round, converting correlated multi-round extinction patterns into uncorrelated ones.
+
 ### 3.5 Linear Cryptanalysis
 
 Linear cryptanalysis [6] faces analogous barriers. The LAT is key-dependent and unknown (Theorem 2 shows masks do not affect it). The expected maximum linear bias for a random 16-bit permutation is approximately ε ≈ 0.013, giving a per-step squared bias of ~2^{−12.5}. Matsui's Piling-Up Lemma over 759 steps yields negligible cumulative bias.
 
 Furthermore, the cascade topology forces every step to be "active" - there are no inactive S-box positions through which a linear trail can pass without penalty. In AES terms, SPM has 759 active S-boxes per block encryption. For comparison, AES-256 guarantees a minimum of 25 active S-boxes over 4 rounds [2]; SPM has 759 active S-boxes by construction.
+
+**Inter-round permutation effect.** The byte-level permutation between rounds acts as a key-dependent linear diffusion layer. While it provides no algebraic mixing (unlike AES's MixColumns), it eliminates the attacker's ability to construct multi-round linear approximations without knowledge of the permutation. The per-block permutation variant further ensures that linear trails valid for one block are invalid for the next, preventing accumulation of linear bias across multiple block encryptions.
 
 ### 3.6 Algebraic Attacks
 
@@ -341,17 +409,31 @@ Algebraic cryptanalysis [7] attempts to express the cipher as a system of polyno
 
 SPM's S-box has **no compact algebraic description**. A random 16-bit permutation has expected multivariate algebraic degree 15 - the maximum for any 16-bit permutation (bounded by n−1 for n-bit permutations). This is more than double AES's degree-7 S-box, and over a vastly larger (16-bit vs. 8-bit) variable space. Expressing the full cipher algebraically would require modeling 759 applications of this high-degree permutation, each coupled through the cascade overlap. The resulting system is intractable for all known algebraic solvers.
 
+**Inter-round permutation effect.** Without the permutation, the cascade has a rigid positional structure: the inter-round byte mapping is the identity, which is publicly known. When an attacker models each cascade step individually — introducing intermediate variables at each of the 759 step boundaries — each equation involves only 2 adjacent byte positions, producing a banded equation system with bandwidth 2. This banded structure extends continuously across round boundaries, giving the attacker exploitable positional locality.
+
+The permutation destroys this regularity. After round i, byte k moves to position π(k) before entering round i+1. Since π is key-dependent and secret, the inter-round dependency graph becomes a secret random bipartite matching. The attacker must either (a) guess π (equivalent to guessing K_S at cost O(2^{127})), or (b) introduce 128 additional discrete unknowns per round boundary subject to bijection constraints — transforming the polynomial system into a mixed integer-polynomial system of categorically greater complexity.
+
+For Gröbner basis algorithms (F4/F5), the permutation eliminates exploitable Jacobian sparsity at round boundaries, forcing the system to behave as a fully dense random system — the worst case for these algorithms. For SAT solvers, the permutation eliminates positional locality that unit propagation, variable ordering heuristics, and learned clause transfer depend upon.
+
+The per-block permutation variant ensures that multi-block algebraic attacks cannot correlate permutation structure across blocks: each block's equation system involves a distinct permutation, related to others only through the secret PRNG evolution.
+
+**Limitation.** The permutation is derived from PRNG_S (the same stream that generates the S-box) and provides derived, not independent, security. Recovery of K_S yields both the S-box and the permutation. The permutation adds only linear equations (byte rearrangement) to the algebraic system — it does not increase the cipher's algebraic degree. Its contribution is structural: eliminating exploitable positional regularity rather than adding nonlinear complexity.
+
 ### 3.7 Meet-in-the-Middle Attacks
 
 Meet-in-the-middle (MITM) attacks exploit ciphers with identifiable "midpoints" that can be computed independently from plaintext and ciphertext. In AES, each round key can be guessed independently in a MITM framework [9].
 
 SPM resists MITM attacks because the S-box and masks are entangled at every cascade step. There is no natural midpoint: the S-box (determined by K_S) is used in every step, and the mask (determined by K_M) is also used in every step. Any MITM partition that fixes one half of the key still requires the full cascade evaluation with the other half, degenerating to exhaustive search.
 
+The permutation is derived from K_S (the same key half as the S-box) and does not introduce additional key material, so the MITM partition is unchanged. The permutation slightly strengthens the entanglement between rounds, but the existing cascade barrier already prevents independent half-key attack.
+
 ### 3.8 Slide Attacks
 
 Slide attacks [10] exploit self-similarity in a cipher's round structure - if round i and round j use identical subkeys, the attacker can identify "slid pairs" and reduce the cipher to a single-round problem.
 
-SPM's mask PRNG advances continuously across blocks. Two blocks at positions i and j use the same mask sequence only if the PRNG state repeats, which occurs after a full period of 2^64 state values × 4 outputs per state = 2^66 mask values. Since each block consumes 759 masks, the mask sequence repeats after 2^66/759 ≈ 9.7 × 10^16 blocks. Finding a slid pair requires approximately √(9.7 × 10^16) ≈ 2^28 block pairs by the birthday bound - but each block is 128 bytes, requiring approximately 2^56 known plaintext-ciphertext block pairs (2^63 bytes ≈ 9 exabytes of data). This is impractical.
+SPM's mask PRNG advances continuously across blocks. Two blocks at positions i and j use the same mask sequence only if the PRNG_M state (m_wState, m_idx) is identical at the start of both blocks. The PRNG_M has a total output period of 2^{66} (2^{64} state values × 4 outputs per state). Each block consumes 759 outputs. Since 759 is odd, gcd(759, 2^{66}) = 1, and the block-boundary states cycle through all 2^{66} distinct (state, idx) values before repeating — a period of 2^{66} blocks. A slid pair requires the block index difference to be a multiple of 2^{66}, meaning the attacker needs 2^{66} blocks of known plaintext, corresponding to 2^{66} × 128 = 2^{73} bytes ≈ 10 zettabytes of data. This is beyond any practical storage or transmission capacity.
+
+**Permutation effect on slide attacks.** A valid slide pair additionally requires matching PRNG_S states (for identical per-block permutations). Each block consumes 128 PRNG_S outputs, and since gcd(128, 2^{66}) = 2^7, the PRNG_S block-boundary states have period 2^{66}/2^7 = 2^{59} blocks. Since 2^{59} divides 2^{66}, any block pair satisfying the PRNG_M period constraint automatically satisfies the PRNG_S constraint. The permutation therefore does not increase the slide attack data requirement beyond the 2^{73} bytes already imposed by PRNG_M state alignment. The permutation's contribution to slide resistance is structural rather than quantitative: even if an attacker found a slid pair (requiring 2^{73} bytes), they would still face the full cascade + permutation inversion problem.
 
 ### 3.9 Chosen-Plaintext Analysis
 
@@ -368,6 +450,8 @@ Under a chosen-plaintext attack (CPA), the attacker submits chosen plaintexts an
 The 128 KB S-box table spans many cache lines on modern processors, creating a classic cache-timing side-channel attack surface analogous to AES T-table attacks [11]. If the full S-box is recovered through a side-channel attack, the remaining search space is the 127-bit mask PRNG key - still O(2^127), which is equivalent to the brute-force security of AES-128.
 
 The key architecture supports arbitrary key widening (§4.3), allowing the security floor under side-channel threat to be raised without architectural changes. A constant-time implementation would require bitslicing the 16-bit S-box, which is substantially more expensive than constant-time AES but is architecturally feasible.
+
+**Permutation side-channel surface.** The byte-level permutation introduces data-dependent memory access patterns: the write address in ApplyPermutation depends on secret permutation values, and the per-block shuffle involves data-dependent swaps that could leak PRNG_S output via cache-timing. If the permutation is recovered through side-channel observation, the 128 shuffle outputs (each 7 effective bits) overconstrain the 64-bit PRNG_S state, enabling full K_S recovery and subsequent S-box reconstruction. The conditional attack complexity remains O(2^{127}) — the same as direct S-box leakage — but the permutation provides an additional observable target. A constant-time implementation of the permutation (unconditional writes to all buffer positions) would eliminate this vector.
 
 ### 3.11 Statistical Distinguishers
 
@@ -390,7 +474,7 @@ We searched for statistical distinguishers that could differentiate SPM cipherte
 | Linear | > O(2^254) | N/A | Unknown LAT + 759 active S-boxes |
 | Algebraic | > O(2^254) | 1 KP pair | No compact algebraic description |
 | Meet-in-the-middle | O(2^254) | 1 KP pair | No separable midpoint |
-| Slide | O(2^254) | ~2^63 bytes | Data requirement impractical |
+| Slide | O(2^254) | ~2^{73} bytes | Data requirement impractical (PRNG_M period = 2^{66} blocks) |
 | Chosen-plaintext | No key recovery | 2^16 blocks | Partial S-box info only |
 | Side-channel | O(2^127) | S-box leak + 1 KP | Conditional on physical access |
 | **Grover (quantum)** | **O(2^{163}) gates** | **1 KP pair** | **~1.05M qubits; see §5** |
@@ -406,11 +490,11 @@ We searched for statistical distinguishers that could differentiate SPM cipherte
 
 AES-256 [1] employs 14 rounds of four distinct transformations: SubBytes (fixed 8-bit S-box), ShiftRows (byte permutation), MixColumns (GF(2^8) matrix multiplication), and AddRoundKey (XOR with round key). The round key schedule expands the 256-bit key into 15 × 128-bit subkeys using SubWord, RotWord, and round constants.
 
-SPM employs 3 rounds of a single repeated transformation: XOR mask followed by 16-bit S-box lookup, applied in a bidirectional cascade. There is no matrix multiplication, no byte permutation layer, and no key schedule.
+SPM employs 3 rounds of two transformations: a bidirectional cascade of XOR mask followed by 16-bit S-box lookup, and a key-dependent byte-level block permutation (§2.5.4). There is no matrix multiplication and no key schedule.
 
 | Dimension | AES-256 | SPM-256 |
 |-----------|---------|---------|
-| Distinct operation types per round | 4 | 1 |
+| Distinct operation types per round | 4 | 2 |
 | S-box width | 8 bits (256 entries) | 16 bits (65,536 entries) |
 | S-box lookups per block | 224 | 759 |
 | Matrix multiplications per block | 160 (GF(2^8)) | 0 |
@@ -418,7 +502,7 @@ SPM employs 3 rounds of a single repeated transformation: XOR mask followed by 1
 | S-box generation cost | 0 (fixed) | ~1,049,000 operations |
 | Block size | 128 bits | 1024 bits |
 
-SPM is algorithmically simpler in the sense that it employs a single primitive operation. However, it requires more S-box lookups per block and a substantially more expensive key setup phase.
+SPM is algorithmically simpler in the sense that it employs fewer primitive operations. However, it requires more S-box lookups per block and a substantially more expensive key setup phase.
 
 ### 4.2 Predefined Constants
 
@@ -555,6 +639,8 @@ $$C_{\text{encrypt}} \approx 759 \times O(2^{16}) \approx O(2^{26}) \text{ gates
 
 $$C_{\text{oracle}}^{\text{SPM}} = C_{\text{sbox-gen}} + C_{\text{encrypt}} \approx O(2^{36}) + O(2^{26}) \approx O(2^{36})$$
 
+The byte-level permutation adds approximately 2,816 qubits (~0.3% of the existing budget) and ~2^{18} additional gates per oracle call (base permutation generation + per-block shuffle + 3 permutation applications). Against the O(2^{36}) S-box generation cost, this is negligible. The permutation does provide a qualitative quantum benefit: it eliminates the regular positional structure (byte k in round i maps to byte k in round i+1) that a quantum algebraic solver could exploit.
+
 ### 5.4 Quantum Attack Comparison: SPM vs. AES
 
 | Metric | AES-256 | SPM-256 | Ratio (SPM/AES) |
@@ -633,7 +719,7 @@ To contextualize SPM's quantum resistance, we surveyed published symmetric ciphe
 | **Blowfish** [4] | ≤448-bit | 64-bit | Key-dependent (521 subkey encryptions) | 8-bit | ~10,000–50,000 | ~2^{22}–2^{25} |
 | **EAES** | 256-bit | 128–256-bit | Fixed (extended AES rounds) | 8-bit | ~400–600 | ~2^{18}–2^{20} |
 | **Rectangle** | 128-bit | 64-bit | Fixed (4-bit) | 4-bit | ~200–400 | ~2^{15}–2^{17} |
-| **SPM-256** | 256-bit | 1024-bit | Key-dependent (PRNG Fisher-Yates shuffle) | **16-bit** | **~1,050,000** | **~2^{36}** |
+| **SPM-256** | 256-bit | 1024-bit | Key-dependent (PRNG naive shuffle) | **16-bit** | **~1,050,000** | **~2^{36}** |
 
 Several observations emerge from this comparison:
 
@@ -657,6 +743,8 @@ The overlapping sliding-window cascade is SPM's most novel structural element. I
 
 The cascade's diffusion mechanism differs fundamentally from AES's MDS matrix. AES achieves optimal branch number (5) through an algebraically defined linear transformation, enabling formal bounds on active S-boxes. The cascade achieves full-block diffusion through serial propagation of the S-box output's high byte, but the diffusion quality is harder to bound formally. The ~61% forward-pass survival probability (§3.4) is offset by the reverse pass and multiple rounds, but no tight bound on the minimum number of "effectively active" S-boxes is known.
 
+The inter-round byte-level permutation complements the cascade by disrupting fixed positional relationships between rounds. While the cascade provides within-round diffusion through serial dependency chains, the permutation provides between-round diffusion by scrambling byte positions. The positional arrangements across 3 rounds (identity, π, π²) are algebraically related through a single key-dependent permutation, providing genuine positional diversity at negligible computational cost. The permutation's primary contribution is structural hardening: eliminating the exploitable regularity of identity inter-round wiring without adding computational expense.
+
 ### 6.2 Block Independence as a Feature
 
 SPM's block-independent encryption (no inter-block chaining) is a deliberate design choice that enables random-access decryption, parallelized encryption across distributed systems, and compartmentalized security - the ability to decrypt only selected blocks without exposing others. This design does not weaken the cipher's cryptanalytic strength (no attack exploiting block independence was found below O(2^254)), but it does require external integrity mechanisms (MAC/HMAC) to detect ciphertext manipulation.
@@ -674,7 +762,7 @@ SPM's block-independent encryption (no inter-block chaining) is a deliberate des
 
 ## 7. Conclusion
 
-The SPM block cipher achieves an effective security level of O(2^254) under classical cryptanalysis - comparable to AES-256's O(2^256) (best known attack: Biclique O(2^254.4) [9]). No attack across any standard family (differential, linear, algebraic, MITM, slide, chosen-plaintext) reduces the complexity below exhaustive key search. The cipher's primary defense - a 759-step cascading S-box with overlapping windows - is a novel and effective construction that resists decomposition and prevents independent attack on the two key halves.
+The SPM block cipher achieves an effective security level of O(2^254) under classical cryptanalysis - comparable to AES-256's O(2^256) (best known attack: Biclique O(2^254.4) [9]). No attack across any standard family (differential, linear, algebraic, MITM, slide, chosen-plaintext) reduces the complexity below exhaustive key search. The cipher's primary defense - a 759-step cascading S-box with overlapping windows - is a novel and effective construction that resists decomposition and prevents independent attack on the two key halves. The inter-round byte-level permutation complements the cascade by eliminating fixed positional structure between rounds, providing structural hardening against algebraic attacks at negligible computational cost.
 
 Under quantum cryptanalysis, SPM demonstrates a **dramatic practical advantage over AES-256**. While both ciphers achieve comparable theoretical post-quantum security under the standard Grover halving metric (~127–128 bits), the concrete quantum computational cost differs by orders of magnitude. SPM's 16-bit key-dependent S-box - designed explicitly as a quantum countermeasure through maximized nonlinearity - requires approximately 1.05 million qubits and 2^{36} gates per Grover oracle call, compared to ~320–400 qubits and ~2^{17}–2^{19} cipher-evaluation T-gates for AES-256. A quantum computer capable of attacking AES-256 via full Grover search would need to be ~3,300× larger in qubit count and perform 130,000–500,000× more gate operations per key candidate to attack SPM-256. A hybrid classical-quantum attack can reduce the qubit requirement to ~3,000–5,000 by classically enumerating K_S values, but at a total cost of O(2^{190+}) - far exceeding the full-Grover cost of O(2^{163}) - making the hybrid attack even less practical than the already-infeasible full Grover approach. Furthermore, SPM is immune to Simon's algorithm and quantum algebraic attacks - attack families that, while not currently practical against full AES, have been demonstrated against Even-Mansour and FX constructions and remain a theoretical concern for fixed-S-box ciphers.
 
